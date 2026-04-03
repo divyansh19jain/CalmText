@@ -7,7 +7,3 @@ def get_llm_client() -> LLMClient:
     if settings.model_provider == "openai":
         return OpenAIClient()
     return MockLLMClient()
-
-def get_claude_client() -> LLMClient:
-    from app.clients.claude_client import ClaudeClient
-    return ClaudeClient()
