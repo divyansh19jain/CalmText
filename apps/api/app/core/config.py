@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     default_prompt_version: str = "pax_v1"
     model_provider: str = "mock"
     openai_api_key: str = ""
+    openai_model_name: str = "gpt-4o"
+    openai_temperature: float = 1.0
+    openai_max_tokens: int = 100
 
     class Config:
         env_file = ".env"
