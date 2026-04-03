@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     default_prompt_version: str = "pax_v1"
     model_provider: str = "mock"
     openai_api_key: str = ""
+    anthropic_api_key: str = ""
 
     class Config:
         env_file = ".env"
