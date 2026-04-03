@@ -18,7 +18,7 @@ class OpenAIClient(LLMClient):
             ],
             temperature=0.65,
             # max_tokens=200,
-            max_completion_tokens=100,
+            max_completion_tokens=200,
         )
         content = response.choices[0].message.content.strip()
         tokens = response.usage.total_tokens if response.usage else 0
