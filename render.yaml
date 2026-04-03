@@ -12,3 +12,5 @@ services:
         value: openai
       - key: OPENAI_API_KEY
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
