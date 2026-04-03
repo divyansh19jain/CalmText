@@ -7,17 +7,18 @@ class OpenAIClient(LLMClient):
     def __init__(self):
         # Initializes using the api key from settings
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self._model_name = settings.openai_model_name
-        
+        # self._model_name = "gpt-5.4-nano" # Using a fast default model
+        self._model_name = "gpt-4o-mini"
     async def generate_completion(self, system_prompt: str, user_text: str) -> Tuple[str, int]:
         response = await self.client.chat.completions.create(
-            model=settings.openai_model_name,
+            model=self._model_name,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_text}
             ],
-            temperature=settings.openai_temperature,
-            max_completion_tokens=settings.openai_max_tokens,
+            temperature=0.65,
+            max_tokens=200,
+            # max_completion_tokens=100,
         )
         content = response.choices[0].message.content.strip()
         tokens = response.usage.total_tokens if response.usage else 0
