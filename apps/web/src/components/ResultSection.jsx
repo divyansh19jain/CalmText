@@ -1,19 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
 import mascotImg from '../assets/mascot.png';
 
 const ResultSection = ({ results, originalText, onNewAnalysis }) => {
   return (
-    <div className="w-full flex flex-col gap-10 relative">
-      {/* Back Button */}
-      <button 
-        onClick={onNewAnalysis}
-        className="absolute -top-12 left-0 flex items-center gap-2 text-gray-500 hover:text-amber-secondary transition-colors group"
-      >
-        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-        <span className="text-sm font-medium">Back</span>
-      </button>
+    <div className="w-full flex flex-col gap-10">
       
       {/* Image 3: Original Message Label Box */}
       <div className="glass-card">

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ResultSection from './components/ResultSection';
 import mascotImg from './assets/mascot.png';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
+// const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://calmtext-api.onrender.com/api/v1';
 
 const App = () => {
   const [inputText, setInputText] = useState('');
@@ -14,7 +15,7 @@ const App = () => {
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) return;
-    
+
     setLoading(true);
     setResults(null);
     setError(null);
@@ -38,11 +39,11 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-app-bg text-gray-200 flex flex-col items-center justify-start p-6 pt-24 md:pt-32">
+    <div className="min-h-screen bg-app-bg text-gray-200 flex flex-col items-center justify-center p-6">
       <AnimatePresence mode="wait">
         {loading ? (
           /* Image 2: Loading State */
-          <motion.div 
+          <motion.div
             key="loading"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -66,22 +67,22 @@ const App = () => {
 
         ) : results ? (
           /* Image 3: Result View */
-          <motion.div 
+          <motion.div
             key="results"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-2xl"
           >
-            <ResultSection 
-              results={results} 
-              originalText={inputText} 
-              onNewAnalysis={reset} 
+            <ResultSection
+              results={results}
+              originalText={inputText}
+              onNewAnalysis={reset}
             />
           </motion.div>
 
         ) : (
           /* Image 1: Initial Home View */
-          <motion.div 
+          <motion.div
             key="home"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
