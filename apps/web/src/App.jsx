@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ResultSection from './components/ResultSection';
 import mascotImg from './assets/mascot.png';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://calmtext-api.onrender.com/api/v1';
 
 const App = () => {
   const [inputText, setInputText] = useState('');
