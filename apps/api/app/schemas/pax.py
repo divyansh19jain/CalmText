@@ -7,6 +7,9 @@ class PaxAnalyzeRequest(BaseModel):
 
 class PaxAnalyzeResponse(BaseModel):
     pax: str
+    clear_text: str = ""
+    pro_text: str = ""
+    sub_text: str = ""
     prompt_version: str
     model: str
     latency_ms: int

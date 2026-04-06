@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --color-app-bg: #000000;
+  --color-card-bg: #121212;
+  --color-input-bg: #0A0A0A;
+  --color-amber-primary: #D0A175;
+  --color-amber-secondary: #8C6D4C;
+  --color-amber-dim: #2A1F16;
+  --color-amber-glow: rgba(208, 161, 117, 0.15);
+}
+
+@layer base {
+  body {
+    @apply bg-app-bg text-gray-200 font-sans antialiased;
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* Image 1: Input styling */
+  .paws-input {
+    @apply w-full bg-input-bg border border-white/5 rounded-2xl p-6 text-white text-lg 
+           placeholder:text-gray-600 focus:outline-none focus:border-amber-secondary/30 
+           transition-all duration-300 resize-none;
+  }
+
+  /* Image 1 & 3: Pill buttons */
+  .btn-paws {
+    @apply flex items-center justify-center gap-3 w-full py-4 rounded-full font-semibold 
+           transition-all duration-300 active:scale-[0.98];
+  }
+
+  .btn-paws-primary {
+    @apply bg-amber-secondary text-black hover:bg-amber-primary shadow-lg shadow-amber-primary/10;
+  }
+
+  .btn-paws-secondary {
+    @apply bg-[#1A130F] text-amber-primary border border-white/5 hover:bg-amber-dim;
+  }
+
+  .btn-paws-ghost {
+    @apply bg-transparent text-amber-primary hover:bg-white/5;
+  }
+
+  /* Image 3: Glassmorphism block */
+  .glass-card {
+    @apply bg-card-bg border border-white/5 rounded-3xl p-8 shadow-2xl;
+  }
+
+  /* Image 3: Focus Box with subtle inner glow */
+  .reflection-box {
+    @apply bg-amber-dim/20 border border-amber-secondary/20 rounded-3xl p-10 
+           shadow-[inset_0_0_40px_rgba(208,161,117,0.05)];
+  }
+
+  /* Image 2: Glowing circle loader */
+  .glow-loader {
+    @apply h-32 w-32 rounded-full bg-amber-secondary/40 flex items-center justify-center 
+           animate-pulse shadow-[0_0_60px_rgba(208,161,117,0.2)];
+  }
+}
+
+/* Custom scrollbar matching Image 1 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-black;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/5 rounded-full;
+}

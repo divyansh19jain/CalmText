@@ -1,14 +1,26 @@
 services:
+  # Backend FastAPI Service
   - type: web
     name: calmtext-api
-    env: python
-    plan: free
-    buildCommand: "pip install -r apps/api/requirements.txt"
-    startCommand: "cd apps/api && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
       - key: MODEL_PROVIDER
-        value: openai
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+    rootDir: apps/api
+
+  # Frontend React/Vite Static Site
+  - type: static
+    name: calmtext-web
+    runtime: node
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://calmtext-api.onrender.com/api/v1
+    rootDir: apps/web
