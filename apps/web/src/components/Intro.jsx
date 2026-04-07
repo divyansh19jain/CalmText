@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const Intro = () => {
   return (
     <section className="mb-20 px-6 xl:px-0">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
@@ -15,12 +15,12 @@ const Intro = () => {
           The Reflective Intent
         </h2>
         <div className="h-1 w-20 mx-auto mb-8 bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full" />
-        
+
         <p className="mb-8 text-lg leading-relaxed text-gray-400">
-          CalmText is not a rewriter. It is a behavioral mirror. Inspired by the instinctive 
-          nature of a "Zen Dog," it nudges your communication back to center. 
+          CalmText is not a rewriter. It is a behavioral mirror. Inspired by the instinctive
+          nature of a "Zen Dog," it nudges your communication back to center.
         </p>
-        
+
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="space-y-3">
             <div className="font-semibold text-white">Pax</div>

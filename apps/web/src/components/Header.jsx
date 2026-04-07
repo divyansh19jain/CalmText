@@ -23,13 +23,13 @@ const Header = ({ provider, setProvider }) => {
 
         <div className="flex items-center gap-4">
           <div className="p-1 rounded-full bg-white/5 border border-white/10 flex items-center">
-            <button 
+            <button
               onClick={() => setProvider('openai')}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${provider === 'openai' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
             >
               OpenAI
             </button>
-            <button 
+            <button
               onClick={() => setProvider('claude')}
               className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 ${provider === 'claude' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
             >

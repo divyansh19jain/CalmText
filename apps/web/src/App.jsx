@@ -3,18 +3,13 @@ import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import ResultSection from './components/ResultSection';
 import mascotImg from './assets/mascot.png';
-
-<<<<<<< HEAD
-// const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
-=======
->>>>>>> 2089d39c26f9cdea518486d249bfe324a126255d
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://calmtext-api.onrender.com/api/v1';
-
+const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 const App = () => {
   const [inputText, setInputText] = useState('');
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [analyzedText, setAnalyzedText] = useState('');
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) return;
@@ -29,6 +24,7 @@ const App = () => {
         prompt_version: 'pax_v2'
       });
       setResults(response.data);
+      setAnalyzedText(inputText);
     } catch (err) {
       setError('Analysis failed. Please try again.');
     } finally {
@@ -42,7 +38,7 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-app-bg text-gray-200 flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-app-bg text-gray-200 flex flex-col items-center justify-start p-6 pt-24 md:pt-32">
       <AnimatePresence mode="wait">
         {loading ? (
           /* Image 2: Loading State */
@@ -78,7 +74,7 @@ const App = () => {
           >
             <ResultSection
               results={results}
-              originalText={inputText}
+              originalText={analyzedText}
               onNewAnalysis={reset}
             />
           </motion.div>
