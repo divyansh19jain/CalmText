@@ -6,6 +6,7 @@ import mascotImg from './assets/mascot.png';
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 const App = () => {
   const [inputText, setInputText] = useState('');
+  const [mode, setMode] = useState('input'); // 'input' or 'output'
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,7 +22,7 @@ const App = () => {
     try {
       const response = await axios.post(`${API_BASE_URL}/pax/analyze`, {
         text: inputText,
-        prompt_version: 'pax_v2'
+        mode: mode
       });
       setResults(response.data);
       setAnalyzedText(inputText);
@@ -41,7 +42,6 @@ const App = () => {
     <div className="min-h-screen bg-app-bg text-gray-200 flex flex-col items-center justify-start p-6 pt-24 md:pt-32">
       <AnimatePresence mode="wait">
         {loading ? (
-          /* Image 2: Loading State */
           <motion.div
             key="loading"
             initial={{ opacity: 0 }}
@@ -51,7 +51,6 @@ const App = () => {
           >
             <div className="relative">
               <div className="glow-loader">
-                {/* Paw Icon */}
                 <svg className="w-12 h-12 text-black" viewBox="0 0 24 24" fill="currentColor">
                   <circle cx="12" cy="7" r="3" />
                   <circle cx="7" cy="11" r="2.5" />
@@ -65,7 +64,6 @@ const App = () => {
           </motion.div>
 
         ) : results ? (
-          /* Image 3: Result View */
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 20 }}
@@ -80,35 +78,54 @@ const App = () => {
           </motion.div>
 
         ) : (
-          /* Image 1: Initial Home View */
           <motion.div
             key="home"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="w-full max-w-lg flex flex-col items-center gap-12"
           >
-            {/* Mascot Image (Image 1) */}
             <div className="w-64 h-64 rounded-[40px] overflow-hidden shadow-2xl">
               <img src={mascotImg} alt="Zen Dog" className="w-full h-full object-cover" />
             </div>
 
-            {/* Input Box (Image 1) */}
+            {/* Mode Selector */}
+            <div className="flex gap-4 w-full p-1 bg-black/20 rounded-2xl backdrop-blur-md">
+              <button
+                onClick={() => setMode('input')}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                  mode === 'input' 
+                    ? 'bg-amber-secondary text-white shadow-lg' 
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                I Received This
+              </button>
+              <button
+                onClick={() => setMode('output')}
+                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                  mode === 'output' 
+                    ? 'bg-amber-secondary text-white shadow-lg' 
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                I'm Drafting This
+              </button>
+            </div>
+
             <div className="w-full">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Paste the text message you received..."
+                placeholder={mode === 'input' ? "Paste the message you received..." : "Paste the draft you're writing..."}
                 className="paws-input h-48"
               />
             </div>
 
-            {/* Paws Button (Image 1) */}
             <button
               onClick={handleAnalyze}
               disabled={!inputText.trim()}
               className="btn-paws btn-paws-primary py-5 text-xl font-medium tracking-tight bg-amber-secondary/80 hover:bg-amber-primary"
             >
-              {/* Paw Icon */}
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="12" cy="7" r="3" />
                 <circle cx="7" cy="11" r="2.5" />

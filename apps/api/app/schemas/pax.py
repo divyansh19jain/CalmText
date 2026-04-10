@@ -1,15 +1,13 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
 
 class PaxAnalyzeRequest(BaseModel):
     text: str = Field(..., description="The user input text to analyze")
+    mode: Literal["input", "output"] = Field(..., description="The context: 'input' for received messages, 'output' for drafting")
     prompt_version: Optional[str] = Field(None, description="Optional specific prompt version to use")
 
 class PaxAnalyzeResponse(BaseModel):
     pax: str
-    clear_text: str = ""
-    pro_text: str = ""
-    sub_text: str = ""
     prompt_version: str
     model: str
     latency_ms: int

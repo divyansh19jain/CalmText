@@ -46,21 +46,15 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
       <div className="flex flex-col gap-4 mt-4">
         <button
           onClick={onNewAnalysis}
-          className="btn-paws btn-paws-ghost py-4 text-amber-primary/80 hover:text-amber-primary"
+          className="btn-paws btn-paws-primary py-5 text-xl font-bold bg-[#D0A175]/90 hover:bg-[#D0A175]"
         >
           Analyze Another Message
         </button>
-
-        <button
-          className="btn-paws btn-paws-primary py-5 text-xl font-bold bg-[#D0A175]/90 hover:bg-[#D0A175]"
-        >
-          Continue to Full Analysis
-        </button>
       </div>
 
-      {/* Footer Info (Implicitly hidden or moved to the bottom of the card) */}
+      {/* Footer Info */}
       <div className="text-center opacity-30 text-[10px] tracking-widest uppercase text-gray-500 mt-4">
-        {results.latency_ms}ms | Pax v2
+        {results.latency_ms}ms | Pax Architecture v4
       </div>
     </div>
   );
