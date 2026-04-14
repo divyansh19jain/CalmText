@@ -39,7 +39,7 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-app-bg text-gray-200 flex flex-col items-center justify-start p-6 pt-24 md:pt-32">
+    <div className="min-h-screen bg-app-bg text-gray-900 flex flex-col items-center justify-start p-6 pt-4 md:pt-6">
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div
@@ -82,30 +82,30 @@ const App = () => {
             key="home"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="w-full max-w-lg flex flex-col items-center gap-12"
+            className="w-full max-w-lg flex flex-col items-center gap-6"
           >
-            <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl bg-white p-4">
-              <img src={mascotImg} alt="Zen Dog" className="w-full h-auto object-contain" />
+            <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl bg-white">
+              <img src={mascotImg} alt="Zen Dog" className="w-full h-auto object-contain -mt-0.5 scale-105" />
             </div>
 
             {/* Mode Selector */}
-            <div className="flex gap-4 w-full p-1 bg-black/20 rounded-2xl backdrop-blur-md">
+            <div className="flex gap-2 w-full p-1.5 bg-gray-100 rounded-2xl">
               <button
                 onClick={() => setMode('input')}
-                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
                   mode === 'input' 
-                    ? 'bg-amber-secondary text-white shadow-lg' 
-                    : 'text-gray-400 hover:text-gray-200'
+                    ? 'bg-pax-blue-secondary text-white shadow-md' 
+                    : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
                 I Received This
               </button>
               <button
                 onClick={() => setMode('output')}
-                className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
                   mode === 'output' 
-                    ? 'bg-amber-secondary text-white shadow-lg' 
-                    : 'text-gray-400 hover:text-gray-200'
+                    ? 'bg-pax-blue-secondary text-white shadow-md' 
+                    : 'text-gray-500 hover:text-gray-800'
                 }`}
               >
                 I'm Drafting This
@@ -124,7 +124,7 @@ const App = () => {
             <button
               onClick={handleAnalyze}
               disabled={!inputText.trim()}
-              className="btn-paws btn-paws-primary py-5 text-xl font-medium tracking-tight bg-amber-secondary/80 hover:bg-amber-primary"
+              className="btn-paws btn-paws-primary py-5 text-xl font-bold tracking-tight"
             >
               <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="12" cy="7" r="3" />
@@ -137,7 +137,7 @@ const App = () => {
             </button>
 
             {error && (
-              <p className="text-red-400 text-sm text-center">{error}</p>
+              <p className="text-red-500 text-sm text-center font-medium">{error}</p>
             )}
           </motion.div>
         )}
