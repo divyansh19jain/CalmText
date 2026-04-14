@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import ResultSection from './components/ResultSection';
-import mascotImg from './assets/mascot.png';
+import mascotImg from './assets/pax_mascot.png';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 const App = () => {
   const [inputText, setInputText] = useState('');
@@ -84,8 +84,8 @@ const App = () => {
             animate={{ opacity: 1 }}
             className="w-full max-w-lg flex flex-col items-center gap-12"
           >
-            <div className="w-64 h-64 rounded-[40px] overflow-hidden shadow-2xl">
-              <img src={mascotImg} alt="Zen Dog" className="w-full h-full object-cover" />
+            <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl bg-white p-4">
+              <img src={mascotImg} alt="Zen Dog" className="w-full h-auto object-contain" />
             </div>
 
             {/* Mode Selector */}

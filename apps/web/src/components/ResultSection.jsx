@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
-import mascotImg from '../assets/mascot.png';
+import mascotImg from '../assets/pax_mascot.png';
 
 const ResultSection = ({ results, originalText, onNewAnalysis }) => {
   return (
@@ -27,8 +27,8 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
 
       {/* Image 3: Pax says... Avatar & Header */}
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-full overflow-hidden border border-amber-secondary/30">
-          <img src={mascotImg} alt="Pax" className="w-full h-full object-cover" />
+        <div className="w-24 h-10 rounded-lg overflow-hidden border border-amber-secondary/30 bg-white p-1 flex items-center justify-center">
+          <img src={mascotImg} alt="Pax" className="w-full h-full object-contain" />
         </div>
         <span className="text-amber-primary font-semibold text-lg tracking-tight">
           Pax says...
