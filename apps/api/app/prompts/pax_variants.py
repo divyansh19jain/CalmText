@@ -92,8 +92,9 @@ Global Rules:
 - No over-clarifying intent.
 
 Format (STRICT):
+Output ONLY the following format. Do not include classification steps or 'How to reply' headers.
+
 Pax Says:
-- How to reply:
   • Rule 1
   • Rule 2
   • Rule 3
