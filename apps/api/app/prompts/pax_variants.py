@@ -84,7 +84,7 @@ E (Apology):
 - Do not reopen the issue.
 - Move toward closure.
 
-Global Rules:
+Global Rules:-
 - Max 1–2 short paragraphs.
 - No long explanations.
 - No emotional escalation.
