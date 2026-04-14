@@ -36,5 +36,9 @@ app.add_middleware(
 )
 
 # Configure routing
+@app.get("/")
+async def root():
+    return {"message": "CalmText API is live"}
+
 app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(pax.router, prefix="/api/v1/pax", tags=["Pax"])
