@@ -60,7 +60,7 @@ const App = () => {
                 </svg>
               </div>
             </div>
-            <p className="text-gray-500 font-medium tracking-tight">Taking a moment to paws...</p>
+            <p className="text-gray-500 font-medium tracking-tight">Taking a moment to pause...</p>
           </motion.div>
 
         ) : results ? (
@@ -133,7 +133,7 @@ const App = () => {
                 <circle cx="12" cy="14" r="1.5" />
                 <path d="M12 21c-3.5 0-6.5-2.5-6.5-5.5s2-4.5 4-4.5h5c2 0 4 1.5 4 4.5S15.5 21 12 21z" />
               </svg>
-              Paws
+              Pause
             </button>
 
             {error && (
