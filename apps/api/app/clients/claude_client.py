@@ -13,7 +13,7 @@ class ClaudeClient(LLMClient):
     async def generate_completion(self, system_prompt: str, user_text: str) -> Tuple[str, int]:
         response = await self.client.messages.create(
             model=self._model_name,
-            max_tokens=200,
+            max_tokens=500,
             system=system_prompt,
             messages=[
                 {"role": "user", "content": user_text}

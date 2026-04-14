@@ -1,3 +1,12 @@
+import sys
+import os
+from pathlib import Path
+
+# Fix module resolution when running from root
+current_dir = Path(__file__).resolve().parent
+if str(current_dir.parent) not in sys.path:
+    sys.path.insert(0, str(current_dir.parent))
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings

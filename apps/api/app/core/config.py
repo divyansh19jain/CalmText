@@ -1,3 +1,4 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from typing import List, Union
 
@@ -11,7 +12,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
 
     class Config:
-        env_file = ".env"
+        env_file = str(Path(__file__).resolve().parent.parent.parent / ".env")
         env_file_encoding = "utf-8"
 
 settings = Settings()

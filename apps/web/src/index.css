@@ -48,7 +48,7 @@
 
   /* Image 3: Focus Box with subtle inner glow */
   .reflection-box {
-    @apply bg-amber-dim/20 border border-amber-secondary/20 rounded-3xl p-10 shadow-[inset_0_0_40px_rgba(208,161,117,0.05)];
+    @apply bg-amber-dim/20 border border-amber-secondary/20 rounded-3xl px-6 py-8 md:px-10 md:py-12 shadow-[inset_0_0_40px_rgba(208,161,117,0.05)];
   }
 
   /* Image 2: Glowing circle loader */

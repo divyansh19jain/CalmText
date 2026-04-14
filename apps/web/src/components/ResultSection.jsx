@@ -37,7 +37,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
 
       {/* Image 3: Focused Reflection Box */}
       <div className="reflection-box">
-        <div className="text-2xl md:text-3xl font-serif text-white whitespace-pre-wrap leading-relaxed tracking-tight italic">
+        <div className="text-lg md:text-xl font-serif text-white whitespace-pre-wrap leading-relaxed tracking-tight">
           {results.pax}
         </div>
       </div>
