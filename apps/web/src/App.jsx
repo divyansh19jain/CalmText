@@ -92,23 +92,21 @@ const App = () => {
             <div className="flex gap-2 w-full p-1.5 bg-gray-100 rounded-2xl">
               <button
                 onClick={() => setMode('input')}
-                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                  mode === 'input' 
-                    ? 'bg-pax-blue-secondary text-white shadow-md' 
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${mode === 'input'
+                    ? 'bg-pax-blue-secondary text-white shadow-md'
                     : 'text-gray-500 hover:text-gray-800'
-                }`}
+                  }`}
               >
                 I Received This
               </button>
               <button
                 onClick={() => setMode('output')}
-                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                  mode === 'output' 
-                    ? 'bg-pax-blue-secondary text-white shadow-md' 
+                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${mode === 'output'
+                    ? 'bg-pax-blue-secondary text-white shadow-md'
                     : 'text-gray-500 hover:text-gray-800'
-                }`}
+                  }`}
               >
-                I'm Drafting This
+                I Want To Say This
               </button>
             </div>
 
