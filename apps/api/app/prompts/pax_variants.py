@@ -181,7 +181,7 @@ Global Rules:-
 
 Format (STRICT):
 Output ONLY the following format. Do not include classification steps or 'How to reply' headers.
-l
+
 Pax Says:
   • Rule 1
   • Rule 2
