@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import mascotImg from '../assets/pax_mascot.png';
+
+const MascotAvatar = ({ borderClass = 'border-pax-blue-secondary/30' }) => {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className={`w-24 h-10 rounded-lg overflow-hidden border ${borderClass} bg-white p-1 flex items-center justify-center`}>
+      {failed ? (
+        <span className="text-pax-blue-secondary font-bold text-sm tracking-tight select-none">CT</span>
+      ) : (
+        <img
+          src={mascotImg}
+          alt="Pax"
+          className="w-full h-full object-contain"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
+};
 
 const ResultSection = ({ results, originalText, onNewAnalysis }) => {
   return (
@@ -27,9 +45,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
 
       {/* Image 3: Pax says... Avatar & Header */}
       <div className="flex items-center gap-4">
-        <div className="w-24 h-10 rounded-lg overflow-hidden border border-pax-blue-secondary/30 bg-white p-1 flex items-center justify-center">
-          <img src={mascotImg} alt="Pax" className="w-full h-full object-contain" />
-        </div>
+        <MascotAvatar />
         <span className="text-pax-blue-secondary font-bold text-lg tracking-tight">
           Pax says...
         </span>
@@ -41,6 +57,25 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
           {results.pax}
         </div>
       </div>
+
+      {/* SubText Avatar & Header */}
+      {results.subtext && (
+        <div className="flex items-center gap-4">
+          <MascotAvatar borderClass="border-pax-blue-secondary/30" />
+          <span className="text-pax-blue-secondary font-bold text-lg tracking-tight">
+            SubText...
+          </span>
+        </div>
+      )}
+
+      {/* SubText Box */}
+      {results.subtext && (
+        <div className="reflection-box">
+          <div className="text-base md:text-lg font-serif text-gray-600 whitespace-pre-wrap leading-relaxed tracking-tight">
+            {results.subtext.replace(/^SubText\s*\n?/, '').trim()}
+          </div>
+        </div>
+      )}
 
       {/* Image 3: Dual Action Buttons */}
       <div className="flex flex-col gap-4 mt-4">
