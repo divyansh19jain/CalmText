@@ -43,34 +43,28 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
         </p>
       </div>
 
-      {/* Image 3: Pax says... Avatar & Header */}
-      <div className="flex items-center gap-4">
-        <MascotAvatar />
-        <span className="text-pax-blue-secondary font-bold text-lg tracking-tight">
-          Pax says...
-        </span>
-      </div>
-
-      {/* Image 3: Focused Reflection Box */}
-      <div className="reflection-box">
+      {/* Pax Box — avatar + label + content all inside */}
+      <div className="reflection-box flex flex-col gap-6">
+        <div className="flex items-center gap-4">
+          <MascotAvatar />
+          <span className="text-pax-blue-secondary font-bold text-lg tracking-tight">
+            Pax says...
+          </span>
+        </div>
         <div className="text-lg md:text-xl font-serif text-gray-800 whitespace-pre-wrap leading-relaxed tracking-tight">
           {results.pax}
         </div>
       </div>
 
-      {/* SubText Avatar & Header */}
+      {/* SubText Box — avatar + label + content all inside */}
       {results.subtext && (
-        <div className="flex items-center gap-4">
-          <MascotAvatar borderClass="border-pax-blue-secondary/30" />
-          <span className="text-pax-blue-secondary font-bold text-lg tracking-tight">
-            SubText...
-          </span>
-        </div>
-      )}
-
-      {/* SubText Box */}
-      {results.subtext && (
-        <div className="reflection-box">
+        <div className="reflection-box flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            <MascotAvatar />
+            <span className="text-pax-blue-secondary font-bold text-lg tracking-tight">
+              SubText...
+            </span>
+          </div>
           <div className="text-base md:text-lg font-serif text-gray-600 whitespace-pre-wrap leading-relaxed tracking-tight">
             {results.subtext.replace(/^SubText\s*\n?/, '').trim()}
           </div>
