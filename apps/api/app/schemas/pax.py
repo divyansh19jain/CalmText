@@ -8,6 +8,7 @@ class PaxAnalyzeRequest(BaseModel):
 
 class PaxAnalyzeResponse(BaseModel):
     pax: str
+    subtext: str = ""
     prompt_version: str
     model: str
     latency_ms: int
