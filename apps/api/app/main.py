@@ -11,7 +11,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.v1.routes import health, pax
+from app.api.v1.routes import health, pax, auth, history, profile
+from app.db.base import Base
+from app.db.session import engine
+import app.models.user  # noqa: ensure models are registered
+import app.models.history  # noqa: ensure models are registered
 
 # Setup environment basics
 setup_logging(debug=settings.debug)
@@ -35,6 +39,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def create_tables():
+    from sqlalchemy import text
+    from app.core.logging import logger
+    logger.info(f"DATABASE_URL: {settings.database_url}")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+        result = await conn.execute(text("SELECT COUNT(*) FROM users"))
+        user_count = result.scalar()
+        result2 = await conn.execute(text("SELECT COUNT(*) FROM search_history"))
+        history_count = result2.scalar()
+        logger.info(f"DB STATE ON STARTUP: {user_count} users, {history_count} history records")
+
 # Configure routing
 @app.get("/")
 async def root():
@@ -42,3 +59,6 @@ async def root():
 
 app.include_router(health.router, prefix="/api/v1", tags=["Health"])
 app.include_router(pax.router, prefix="/api/v1/pax", tags=["Pax"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(history.router, prefix="/api/v1/history", tags=["History"])
+app.include_router(profile.router, prefix="/api/v1/profile", tags=["Profile"])
