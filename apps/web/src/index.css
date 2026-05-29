@@ -57,6 +57,11 @@
   }
 }
 
+/* Pointer cursor on all clickable elements */
+button, a, [role="button"] {
+  cursor: pointer;
+}
+
 /* Custom scrollbar matching original layout */
 ::-webkit-scrollbar {
   width: 6px;
