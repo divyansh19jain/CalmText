@@ -33,7 +33,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
         <span className="text-sm font-medium">Back</span>
       </button>
 
-      {/* Image 3: Original Message Label Box */}
+      {/* Original Message */}
       <div className="glass-card">
         <label className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-4 block">
           Original Message
@@ -43,7 +43,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
         </p>
       </div>
 
-      {/* Pax Box — avatar + label + content all inside */}
+      {/* Pax Box */}
       <div className="reflection-box flex flex-col gap-6">
         <div className="flex items-center gap-4">
           <MascotAvatar />
@@ -56,7 +56,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
         </div>
       </div>
 
-      {/* SubText Box — avatar + label + content all inside */}
+      {/* SubText Box */}
       {results.subtext && (
         <div className="reflection-box flex flex-col gap-6">
           <div className="flex items-center gap-4">
@@ -71,7 +71,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
         </div>
       )}
 
-      {/* Image 3: Dual Action Buttons */}
+      {/* Action Buttons */}
       <div className="flex flex-col gap-4 mt-4">
         <button
           onClick={onNewAnalysis}
@@ -81,7 +81,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
         </button>
       </div>
 
-      {/* Footer Info */}
+      {/* Footer */}
       <div className="text-center opacity-40 text-[10px] tracking-widest uppercase text-gray-400 mt-4">
         {results.latency_ms}ms | Pax Architecture v4
       </div>
