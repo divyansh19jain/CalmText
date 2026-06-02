@@ -15,6 +15,13 @@ class PaxAnalyzeResponse(BaseModel):
     tokens_used: int
     error: str = ""
 
+class ClearTextRequest(BaseModel):
+    text: str
+
+class ClearTextResponse(BaseModel):
+    feedback: str
+    latency_ms: int
+
 class PaxFeedbackRequest(BaseModel):
     text: str
     pax: str
