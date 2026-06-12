@@ -1,53 +1,48 @@
 import React from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { LuZap } from 'react-icons/lu';
 
 const ClearTextResult = ({ result, originalText, onNewAnalysis }) => {
   return (
-    <div className="w-full flex flex-col gap-10 relative">
-
-      {/* Back Button */}
-      <button
-        onClick={onNewAnalysis}
-        className="absolute -top-12 left-0 flex items-center gap-2 text-gray-500 hover:text-pax-blue-secondary transition-colors group"
-      >
-        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-        <span className="text-sm font-medium">Back</span>
-      </button>
+    <div className="flex flex-col gap-5">
 
       {/* Original Message */}
-      <div className="glass-card">
-        <label className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-4 block">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
+        className="glass-card">
+        <label className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-3 block">
           The Message
         </label>
-        <p className="text-xl font-semibold text-gray-900 tracking-tight">{originalText}</p>
-      </div>
+        <p className="text-base font-semibold text-gray-900 leading-relaxed">
+          {originalText}
+        </p>
+      </motion.div>
 
       {/* ClearText Feedback */}
-      <div className="flex flex-col gap-6 rounded-3xl px-6 py-8 md:px-10 md:py-12"
-        style={{ background: '#F0F7FF', border: '1px solid rgba(37,99,235,0.15)' }}>
-        <div className="flex items-center gap-4">
-          <div className="w-24 h-10 rounded-lg overflow-hidden border border-pax-blue-secondary/20 bg-white p-1 flex items-center justify-center">
-            <span className="text-pax-blue-secondary font-bold text-sm tracking-tight">CT</span>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.10 }}
+        className="reflection-box flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: 'rgba(219,234,254,0.80)', border: '1px solid rgba(37,99,235,0.18)' }}>
+            <span className="text-blue-600 font-bold text-xs select-none">CT</span>
           </div>
-          <span className="text-pax-blue-secondary font-bold text-lg tracking-tight">ClearText</span>
+          <span className="text-blue-600 font-bold text-sm tracking-tight">ClearText</span>
         </div>
-        <div className="text-base md:text-lg font-serif text-gray-700 whitespace-pre-wrap leading-relaxed tracking-tight">
+        <div className="text-base font-serif text-gray-800 whitespace-pre-wrap leading-relaxed">
           {result.feedback}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Action Button */}
-      <div className="flex flex-col gap-4 mt-4">
-        <button
-          onClick={onNewAnalysis}
-          className="w-full py-5 rounded-full bg-pax-blue-secondary text-white text-xl font-bold hover:bg-pax-blue-primary transition-colors"
-        >
+      {/* CTA */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.17 }}>
+        <button onClick={onNewAnalysis} className="btn-paws btn-paws-primary py-4 text-sm font-bold">
           Analyze Another Message
         </button>
-      </div>
+      </motion.div>
 
-      <div className="text-center opacity-40 text-[10px] tracking-widest uppercase text-gray-400 mt-4">
-        {result.latency_ms}ms | ClearText v1
+      {/* Footer */}
+      <div className="flex items-center justify-center gap-1.5 text-[10px] text-blue-300 tracking-widest uppercase">
+        <LuZap className="w-3 h-3" />
+        {result.latency_ms}ms · ClearText v1
       </div>
     </div>
   );

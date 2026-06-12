@@ -65,6 +65,8 @@ async def signin(body: SigninRequest, db: AsyncSession = Depends(get_db)):
         access_token=create_access_token(user.id),
         user_id=user.id,
         email=user.email,
+        name=user.name,
+        username=user.username,
     )
 
 @router.post("/reset-password", status_code=200)

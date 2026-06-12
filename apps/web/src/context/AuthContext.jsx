@@ -13,10 +13,16 @@ export const AuthProvider = ({ children }) => {
   });
 
   const login = (tokenResponse) => {
+    const userData = {
+      id: tokenResponse.user_id,
+      email: tokenResponse.email,
+      name: tokenResponse.name || '',
+      username: tokenResponse.username || '',
+    };
     localStorage.setItem(TOKEN_KEY, tokenResponse.access_token);
-    localStorage.setItem(USER_KEY, JSON.stringify({ id: tokenResponse.user_id, email: tokenResponse.email }));
+    localStorage.setItem(USER_KEY, JSON.stringify(userData));
     setToken(tokenResponse.access_token);
-    setUser({ id: tokenResponse.user_id, email: tokenResponse.email });
+    setUser(userData);
   };
 
   const logout = () => {
