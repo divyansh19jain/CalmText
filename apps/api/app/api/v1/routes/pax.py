@@ -64,6 +64,8 @@ async def analyze_cleartext(
 async def write_own_voice(
     request: OwnVoiceRequest,
     llm_client: LLMClient = Depends(get_llm_client),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_optional_user),
 ):
     start = time.time()
     user_text = (
@@ -72,7 +74,21 @@ async def write_own_voice(
     )
     message, _ = await llm_client.generate_completion(OWNVOICE_V1_PROMPT, user_text)
     latency_ms = int((time.time() - start) * 1000)
-    return OwnVoiceResponse(message=message.strip(), latency_ms=latency_ms)
+    result = message.strip()
+
+    # Save to history for signed-in users (intent -> text, generated message -> pax)
+    if current_user is not None:
+        entry = SearchHistory(
+            user_id=current_user.id,
+            text=request.intent,
+            mode="voice",
+            pax=result,
+            subtext="",
+        )
+        db.add(entry)
+        await db.commit()
+
+    return OwnVoiceResponse(message=result, latency_ms=latency_ms)
 
 @router.post("/feedback", response_model=PaxFeedbackResponse)
 async def submit_feedback(request: PaxFeedbackRequest):

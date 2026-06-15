@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LuEye, LuEyeOff, LuMail, LuLock, LuPawPrint } from 'react-icons/lu';
+import { LuEye, LuEyeOff, LuMail, LuLock, LuPawPrint, LuArrowLeft } from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from './AuthLayout';
 
@@ -34,6 +34,14 @@ const LoginPage = () => {
 
   return (
     <AuthLayout>
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="flex items-center gap-1.5 text-sm font-semibold text-gray-400 hover:text-blue-600 transition-colors -mb-1 self-start"
+      >
+        <LuArrowLeft className="w-4 h-4" /> Back to home
+      </button>
+
       <div className="flex flex-col gap-1.5">
         <span className="text-xs font-bold uppercase tracking-widest text-blue-500">Welcome back</span>
         <h2 className="text-3xl font-extrabold text-blue-900 tracking-tight">Sign in to CalmText</h2>

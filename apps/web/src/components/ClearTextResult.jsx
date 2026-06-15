@@ -22,7 +22,7 @@ const ClearTextResult = ({ result, originalText, onNewAnalysis }) => {
         className="reflection-box flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: 'rgba(219,234,254,0.80)', border: '1px solid rgba(37,99,235,0.18)' }}>
+            style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-border)' }}>
             <span className="text-blue-600 font-bold text-xs select-none">CT</span>
           </div>
           <span className="text-blue-600 font-bold text-sm tracking-tight">ClearText</span>

@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import ResultSection from "./components/ResultSection";
 import ClearTextResult from "./components/ClearTextResult";
 import OwnVoiceResult from "./components/OwnVoiceResult";
+import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./context/AuthContext";
 import mascotImg from "./assets/pax_mascot-update-01-copy.png";
 import mascotSingleImg from "./assets/single-logo.png";
@@ -130,6 +131,11 @@ const App = () => {
         );
         setVoiceResult(data);
         localStorage.setItem("ct_voice_sample", voiceSample); // remember their voice
+        // Refresh history so the new Own Voice entry shows up
+        const h = await axios.get(`${API_BASE_URL}/history`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setHistoryItems(h.data.items || []);
       } catch {
         setError("Couldn't write that. Please try again.");
       } finally {
@@ -202,10 +208,22 @@ const App = () => {
   };
 
   const handleReplay = (item) => {
-    setResults({ pax: item.pax, subtext: item.subtext, latency_ms: 0 });
-    setAnalyzedText(item.text);
-    setMode(item.mode);
+    // Reset all result views, then restore the one matching this item's mode
+    setResults(null);
     setCtResult(null);
+    setVoiceResult(null);
+    setMode(item.mode);
+
+    if (item.mode === "voice") {
+      setIntent(item.text);
+      setVoiceResult({ message: item.pax, latency_ms: 0 });
+    } else if (item.mode === "cleartext") {
+      setCtText(item.text);
+      setCtResult({ feedback: item.pax, latency_ms: 0 });
+    } else {
+      setAnalyzedText(item.text);
+      setResults({ pax: item.pax, subtext: item.subtext, latency_ms: 0 });
+    }
   };
 
   const formatDate = (iso) => {
@@ -231,6 +249,7 @@ const App = () => {
           <span className="text-sm font-bold text-gray-800">CalmText</span>
         </div>
         <div className="flex items-center gap-1">
+          <ThemeToggle />
           {isAuthenticated ? (
             <>
               <button
@@ -308,8 +327,13 @@ const App = () => {
           {/* Bottom auth section */}
           <div
             className="flex flex-col gap-1 pt-4"
-            style={{ borderTop: "1px solid rgba(37,99,235,0.08)" }}
+            style={{ borderTop: "1px solid var(--surface-border)" }}
           >
+            {/* Theme toggle row */}
+            <div className="flex items-center justify-between px-3 py-1.5 mb-1">
+              <span className="text-xs font-semibold t-muted">Appearance</span>
+              <ThemeToggle />
+            </div>
             {isAuthenticated ? (
               <>
                 <button
@@ -692,8 +716,8 @@ const App = () => {
                         key={title}
                         className="flex flex-col items-center gap-2 p-3 rounded-2xl text-center"
                         style={{
-                          background: "rgba(255,255,255,0.55)",
-                          border: "1px solid rgba(37,99,235,0.09)",
+                          background: "var(--surface)",
+                          border: "1px solid var(--surface-border)",
                           backdropFilter: "blur(12px)",
                         }}
                       >

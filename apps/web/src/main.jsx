@@ -8,6 +8,7 @@ import SignupPage from './pages/SignupPage.jsx'
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
+import { ThemeProvider } from './context/ThemeContext.jsx'
 
 // Redirect to /login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -24,6 +25,7 @@ const PublicOnlyRoute = ({ children }) => {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
@@ -34,6 +36,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 )

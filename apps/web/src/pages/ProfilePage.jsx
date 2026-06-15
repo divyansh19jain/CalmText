@@ -6,6 +6,7 @@ import {
   LuPhone, LuAtSign, LuSparkles, LuClock, LuCalendar, LuShieldCheck,
 } from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext';
+import ThemeToggle from '../components/ThemeToggle';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 
@@ -97,7 +98,7 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen w-full">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="max-w-3xl xxl:max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
 
         {/* ── Top bar ── */}
         <div className="flex items-center justify-between mb-6">
@@ -105,10 +106,13 @@ const ProfilePage = () => {
             className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-blue-600 transition-colors">
             <LuArrowLeft className="w-4 h-4" /> Back
           </button>
-          <button onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-xl hover:bg-red-50">
-            <LuLogOut className="w-4 h-4" /> Log out
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button onClick={handleLogout}
+              className="flex items-center gap-2 text-sm font-semibold text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-xl hover:bg-red-50">
+              <LuLogOut className="w-4 h-4" /> Log out
+            </button>
+          </div>
         </div>
 
         {/* ── Hero card ── */}
@@ -143,9 +147,9 @@ const ProfilePage = () => {
             <div key={label}
               className="flex flex-col items-center sm:items-start gap-2 rounded-2xl p-4 sm:p-5"
               style={{
-                background: 'rgba(255,255,255,0.78)',
-                border: '1px solid rgba(255,255,255,0.92)',
-                boxShadow: '0 6px 20px rgba(37,99,235,0.07)',
+                background: 'var(--surface)',
+                border: '1px solid var(--surface-border)',
+                boxShadow: '0 6px 20px var(--surface-shadow)',
               }}>
               <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-50 text-blue-500">
                 <Icon className="w-4 h-4" />
@@ -162,9 +166,9 @@ const ProfilePage = () => {
         {profile && (
           <div className="rounded-3xl p-6 sm:p-7"
             style={{
-              background: 'rgba(255,255,255,0.82)',
-              border: '1px solid rgba(255,255,255,0.92)',
-              boxShadow: '0 10px 32px rgba(37,99,235,0.08)',
+              background: 'var(--surface)',
+              border: '1px solid var(--surface-border)',
+              boxShadow: '0 10px 32px var(--surface-shadow)',
             }}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-base font-bold text-gray-800 tracking-tight">Account details</h2>

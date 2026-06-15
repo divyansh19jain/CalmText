@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { LuZap } from 'react-icons/lu';
-import mascotImg from '../assets/pax_mascot.png';
+import mascotImg from '../assets/single-logo.png';
 
 const MascotAvatar = () => {
   const [failed, setFailed] = useState(false);
