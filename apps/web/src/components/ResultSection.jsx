@@ -6,8 +6,7 @@ import mascotImg from '../assets/pax_mascot.png';
 const MascotAvatar = () => {
   const [failed, setFailed] = useState(false);
   return (
-    <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0"
-      style={{ background: 'rgba(219,234,254,0.80)', border: '1px solid rgba(37,99,235,0.18)' }}>
+    <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
       {failed ? (
         <span className="text-blue-600 font-bold text-xs select-none">PAX</span>
       ) : (

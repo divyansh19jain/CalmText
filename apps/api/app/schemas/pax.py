@@ -22,6 +22,14 @@ class ClearTextResponse(BaseModel):
     feedback: str
     latency_ms: int
 
+class OwnVoiceRequest(BaseModel):
+    voice_sample: str = Field(..., description="Examples of how the user writes, used to capture their voice")
+    intent: str = Field(..., description="What the user wants to say in the new message")
+
+class OwnVoiceResponse(BaseModel):
+    message: str
+    latency_ms: int
+
 class PaxFeedbackRequest(BaseModel):
     text: str
     pax: str

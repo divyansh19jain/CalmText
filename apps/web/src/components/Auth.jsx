@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { LuEye, LuEyeOff, LuX } from 'react-icons/lu';
+import {
+  LuEye, LuEyeOff, LuX, LuMail, LuLock, LuUser, LuAtSign, LuPhone,
+  LuShieldCheck, LuSparkles, LuMessageSquare, LuSearch, LuArrowLeft,
+} from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext';
+import mascotImg from '../assets/pax_mascot-update-01-copy.png';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 
@@ -59,142 +63,228 @@ const Auth = ({ onClose }) => {
 
   const titles = {
     signin: 'Welcome back',
-    signup: 'Create account',
+    signup: 'Create your account',
     forgot: 'Reset password',
     verify: 'Enter reset code',
   };
+  const subtitles = {
+    signin: 'Sign in to continue your conversations with Pax.',
+    signup: 'Join CalmText and communicate with clarity.',
+    forgot: "Enter your email and we'll send you a reset code.",
+    verify: 'Check your inbox for the 6-digit code.',
+  };
 
-  const inputCls = 'paws-input h-auto py-4 text-base';
-  const inputWrap = 'relative';
+  const features = [
+    { Icon: LuMessageSquare, title: 'Decode', desc: 'Understand hidden tone & intent' },
+    { Icon: LuSparkles,      title: 'Refine', desc: 'Say exactly what you mean' },
+    { Icon: LuSearch,        title: 'Clarity', desc: 'Cut through emotional noise' },
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(200,220,255,0.45)', backdropFilter: 'blur(12px)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(200,220,255,0.45)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
 
-      <div className="w-full max-w-sm mx-4 flex flex-col gap-5 max-h-[92vh] overflow-y-auto"
+      <div className="auth-card w-full max-w-3xl flex max-h-[94vh] overflow-hidden relative"
         style={{
-          background: 'rgba(255,255,255,0.75)',
-          border: '1px solid rgba(255,255,255,0.90)',
+          background: 'rgba(255,255,255,0.78)',
+          border: '1px solid rgba(255,255,255,0.92)',
           backdropFilter: 'blur(32px)',
           WebkitBackdropFilter: 'blur(32px)',
           borderRadius: '28px',
-          padding: '32px',
-          boxShadow: '0 24px 64px rgba(37,99,235,0.15), 0 1px 0 rgba(255,255,255,0.9) inset',
+          boxShadow: '0 24px 64px rgba(37,99,235,0.18), 0 1px 0 rgba(255,255,255,0.9) inset',
         }}>
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-blue-900 tracking-tight">{titles[mode]}</h2>
-          <button onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-all">
-            <LuX className="w-4 h-4" />
-          </button>
+        {/* Close */}
+        <button onClick={onClose}
+          className="absolute right-4 top-4 z-20 w-9 h-9 flex items-center justify-center rounded-xl text-blue-400 hover:text-blue-700 hover:bg-blue-50 transition-all">
+          <LuX className="w-4 h-4" />
+        </button>
+
+        {/* ─── Left brand panel (hidden on small screens) ─── */}
+        <div className="hidden md:flex flex-col justify-between w-[42%] p-8 relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(160deg, #2563EB 0%, #3b82f6 60%, #60a5fa 100%)',
+          }}>
+          {/* decorative blobs */}
+          <div style={{ position: 'absolute', top: '-60px', right: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'rgba(255,255,255,0.14)', filter: 'blur(8px)' }} />
+          <div style={{ position: 'absolute', bottom: '-50px', left: '-30px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(255,255,255,0.10)', filter: 'blur(6px)' }} />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-2.5 mb-8">
+              <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center overflow-hidden">
+                <img src={mascotImg} alt="Pax" className="w-9 h-9 object-contain" />
+              </div>
+              <span className="text-white font-extrabold text-lg tracking-tight">CalmText</span>
+            </div>
+            <h3 className="text-white text-2xl font-extrabold leading-snug tracking-tight">
+              Pause. Reflect.<br />Communicate with clarity.
+            </h3>
+            <p className="text-blue-100 text-sm mt-3 leading-relaxed">
+              Pax helps you understand what people really mean — and say what you really feel.
+            </p>
+          </div>
+
+          <div className="relative z-10 flex flex-col gap-3 mt-8">
+            {features.map(({ Icon, title, desc }) => (
+              <div key={title} className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white/18 backdrop-blur-md flex items-center justify-center flex-shrink-0">
+                  <Icon className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-white text-sm font-bold leading-tight">{title}</span>
+                  <span className="text-blue-100 text-[11px] leading-tight">{desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Toggle */}
-        {(mode === 'signin' || mode === 'signup') && (
-          <div className="mode-switcher">
-            <button onClick={() => switchMode('signin')} className={`mode-tab ${mode === 'signin' ? 'mode-tab-active' : ''}`}>
-              Sign In
-            </button>
-            <button onClick={() => switchMode('signup')} className={`mode-tab ${mode === 'signup' ? 'mode-tab-active' : ''}`}>
-              Sign Up
-            </button>
+        {/* ─── Right form panel ─── */}
+        <div className="flex-1 p-8 overflow-y-auto flex flex-col gap-5">
+
+          {/* Mobile mini-logo */}
+          <div className="flex md:hidden items-center gap-2 mb-1">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden"
+              style={{ background: 'rgba(219,234,254,0.8)' }}>
+              <img src={mascotImg} alt="Pax" className="w-8 h-8 object-contain" />
+            </div>
+            <span className="font-extrabold text-blue-900 tracking-tight">CalmText</span>
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          {/* Heading */}
+          <div className="flex flex-col gap-1">
+            {(mode === 'forgot' || mode === 'verify') && (
+              <button type="button" onClick={() => switchMode('signin')}
+                className="flex items-center gap-1.5 text-xs text-blue-400 font-semibold hover:text-blue-700 transition-colors mb-1 w-fit">
+                <LuArrowLeft className="w-3.5 h-3.5" /> Back to sign in
+              </button>
+            )}
+            <h2 className="text-2xl font-extrabold text-blue-900 tracking-tight">{titles[mode]}</h2>
+            <p className="text-sm text-gray-400">{subtitles[mode]}</p>
+          </div>
 
-          {mode === 'signup' && (
-            <>
-              <input type="text" placeholder="Full name" value={name}
-                onChange={(e) => setName(e.target.value)} className={inputCls} />
-              <input type="text" placeholder="Username" value={username}
-                onChange={(e) => setUsername(e.target.value)} className={inputCls} />
-              <input type="tel" placeholder="Mobile number" value={mobile}
-                onChange={(e) => setMobile(e.target.value)} className={inputCls} />
-            </>
-          )}
-
-          {mode !== 'verify' && (
-            <input type="email" placeholder="Email" value={email}
-              onChange={(e) => setEmail(e.target.value)} required className={inputCls} />
-          )}
-
+          {/* Toggle */}
           {(mode === 'signin' || mode === 'signup') && (
-            <div className={inputWrap}>
-              <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
-                onChange={(e) => setPassword(e.target.value)} required minLength={6}
-                className={`${inputCls} pr-12`} />
-              <button type="button" onClick={() => setShowPassword(v => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-300 hover:text-blue-600 transition-colors">
-                {showPassword ? <LuEyeOff className="w-5 h-5" /> : <LuEye className="w-5 h-5" />}
+            <div className="mode-switcher">
+              <button onClick={() => switchMode('signin')} className={`mode-tab ${mode === 'signin' ? 'mode-tab-active' : ''}`}>
+                Sign In
+              </button>
+              <button onClick={() => switchMode('signup')} className={`mode-tab ${mode === 'signup' ? 'mode-tab-active' : ''}`}>
+                Sign Up
               </button>
             </div>
           )}
 
-          {mode === 'verify' && (
-            <>
-              <p className="text-sm text-blue-400 text-center">
-                Code sent to <span className="font-semibold text-blue-700">{email}</span>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+
+            {mode === 'signup' && (
+              <>
+                <div className="auth-field">
+                  <LuUser className="auth-field-icon" />
+                  <input type="text" placeholder="Full name" value={name}
+                    onChange={(e) => setName(e.target.value)} className="auth-input" />
+                </div>
+                <div className="auth-field">
+                  <LuAtSign className="auth-field-icon" />
+                  <input type="text" placeholder="Username" value={username}
+                    onChange={(e) => setUsername(e.target.value)} className="auth-input" />
+                </div>
+                <div className="auth-field">
+                  <LuPhone className="auth-field-icon" />
+                  <input type="tel" placeholder="Mobile number" value={mobile}
+                    onChange={(e) => setMobile(e.target.value)} className="auth-input" />
+                </div>
+              </>
+            )}
+
+            {mode !== 'verify' && (
+              <div className="auth-field">
+                <LuMail className="auth-field-icon" />
+                <input type="email" placeholder="Email address" value={email}
+                  onChange={(e) => setEmail(e.target.value)} required className="auth-input" />
+              </div>
+            )}
+
+            {(mode === 'signin' || mode === 'signup') && (
+              <div className="auth-field">
+                <LuLock className="auth-field-icon" />
+                <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password}
+                  onChange={(e) => setPassword(e.target.value)} required minLength={6}
+                  className="auth-input" style={{ paddingRight: '44px' }} />
+                <button type="button" onClick={() => setShowPassword(v => !v)} className="auth-eye">
+                  {showPassword ? <LuEyeOff className="w-5 h-5" /> : <LuEye className="w-5 h-5" />}
+                </button>
+              </div>
+            )}
+
+            {mode === 'verify' && (
+              <>
+                <div className="flex items-center justify-center gap-2 text-sm text-blue-400 mb-1">
+                  <LuShieldCheck className="w-4 h-4" />
+                  <span>Code sent to <span className="font-semibold text-blue-700">{email}</span></span>
+                </div>
+                <input type="text" placeholder="------" value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required maxLength={6}
+                  className="paws-input h-auto py-4 text-center tracking-[0.5em] font-bold text-2xl" />
+                <div className="auth-field">
+                  <LuLock className="auth-field-icon" />
+                  <input type={showNewPassword ? 'text' : 'password'} placeholder="New password" value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)} required minLength={6}
+                    className="auth-input" style={{ paddingRight: '44px' }} />
+                  <button type="button" onClick={() => setShowNewPassword(v => !v)} className="auth-eye">
+                    {showNewPassword ? <LuEyeOff className="w-5 h-5" /> : <LuEye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <div className="auth-field">
+                  <LuLock className="auth-field-icon" />
+                  <input type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirm new password" value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6}
+                    className="auth-input" style={{ paddingRight: '44px' }} />
+                  <button type="button" onClick={() => setShowConfirmPassword(v => !v)} className="auth-eye">
+                    {showConfirmPassword ? <LuEyeOff className="w-5 h-5" /> : <LuEye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {mode === 'signin' && (
+              <button type="button" onClick={() => switchMode('forgot')}
+                className="text-xs text-blue-500 font-semibold text-right hover:text-blue-700 transition-colors -mt-1">
+                Forgot password?
+              </button>
+            )}
+
+            {error && (
+              <p className="text-red-500 text-sm text-center bg-red-50 border border-red-100 rounded-xl px-3 py-2.5">
+                {error}
               </p>
-              <input type="text" placeholder="6-digit code" value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                required maxLength={6}
-                className={`${inputCls} text-center tracking-[0.5em] font-bold text-xl`} />
-              <div className={inputWrap}>
-                <input type={showNewPassword ? 'text' : 'password'} placeholder="New password" value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)} required minLength={6}
-                  className={`${inputCls} pr-12`} />
-                <button type="button" onClick={() => setShowNewPassword(v => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-300 hover:text-blue-600">
-                  {showNewPassword ? <LuEyeOff className="w-5 h-5" /> : <LuEye className="w-5 h-5" />}
-                </button>
-              </div>
-              <div className={inputWrap}>
-                <input type={showConfirmPassword ? 'text' : 'password'} placeholder="Confirm new password" value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6}
-                  className={`${inputCls} pr-12`} />
-                <button type="button" onClick={() => setShowConfirmPassword(v => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-300 hover:text-blue-600">
-                  {showConfirmPassword ? <LuEyeOff className="w-5 h-5" /> : <LuEye className="w-5 h-5" />}
-                </button>
-              </div>
-            </>
-          )}
+            )}
+            {success && (
+              <p className="text-green-600 text-sm text-center bg-green-50 border border-green-100 rounded-xl px-3 py-2.5">
+                {success}
+              </p>
+            )}
 
-          {mode === 'signin' && (
-            <button type="button" onClick={() => switchMode('forgot')}
-              className="text-xs text-blue-500 font-medium text-right hover:text-blue-700 transition-colors">
-              Forgot password?
+            <button type="submit" disabled={loading} className="btn-paws btn-paws-primary py-4 text-base font-bold mt-1 disabled:opacity-50">
+              {loading ? 'Please wait...' :
+                mode === 'signup' ? 'Create Account' :
+                mode === 'forgot' ? 'Send Reset Code' :
+                mode === 'verify' ? 'Reset Password' : 'Sign In'}
             </button>
-          )}
+          </form>
 
-          {error && (
-            <p className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
-              {error}
+          {/* Footer switch */}
+          {(mode === 'signin' || mode === 'signup') && (
+            <p className="text-center text-xs text-gray-400 mt-auto pt-2">
+              {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
+              <button type="button" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')}
+                className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">
+                {mode === 'signin' ? 'Sign up' : 'Sign in'}
+              </button>
             </p>
           )}
-          {success && (
-            <p className="text-green-400 text-sm text-center bg-green-500/10 border border-green-500/20 rounded-xl px-3 py-2">
-              {success}
-            </p>
-          )}
-
-          <button type="submit" disabled={loading} className="btn-paws btn-paws-primary py-4 text-base font-bold mt-1 disabled:opacity-50">
-            {loading ? 'Please wait...' :
-              mode === 'signup' ? 'Create Account' :
-              mode === 'forgot' ? 'Send Reset Code' :
-              mode === 'verify' ? 'Reset Password' : 'Sign In'}
-          </button>
-
-          {(mode === 'forgot' || mode === 'verify') && (
-            <button type="button" onClick={() => switchMode('signin')}
-              className="text-xs text-blue-300 font-medium text-center hover:text-blue-600 transition-colors">
-              Back to Sign In
-            </button>
-          )}
-        </form>
+        </div>
       </div>
     </div>
   );

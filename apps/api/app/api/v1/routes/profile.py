@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 from app.db.session import get_db
 from app.models.user import User
 from app.core.dependencies import get_current_user
@@ -15,6 +16,7 @@ class ProfileResponse(BaseModel):
     name: Optional[str] = None
     username: Optional[str] = None
     mobile: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 
