@@ -240,13 +240,12 @@ const App = () => {
     <div className="app-shell">
       {/* ── Mobile top bar (hidden on md+) ── */}
       <div className="mobile-topbar">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center">
           <img
-            src={mascotSingleImg}
-            alt="Pax"
-            className="w-8 h-8 object-contain"
+            src={mascotImg}
+            alt="CalmText"
+            className="h-8 w-auto object-contain"
           />
-          <span className="text-sm font-bold text-gray-800">CalmText</span>
         </div>
         <div className="flex items-center gap-1">
           <ThemeToggle />
