@@ -30,3 +30,35 @@ async def send_otp_email(to_email: str, otp: str) -> None:
         username=settings.gmail_user,
         password=settings.gmail_app_password,
     )
+
+
+async def send_admin_notification(subject: str, message: str, user_id: int = None, user_email: str = None) -> None:
+    """Send notification email to admin about critical issues"""
+    admin_email = settings.admin_email
+    from_email = settings.admin_alert_from_email
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"CalmText Admin Alert: {subject}"
+    msg["From"] = from_email
+    msg["To"] = admin_email
+
+    body = f"""This is an automated alert from the CalmText system.
+
+Alert: {subject}
+Issue: {message}
+
+Please review and recharge the relevant API account at the earliest to avoid any interruption in service.
+
+Regards,
+CalmText System
+"""
+    msg.attach(MIMEText(body, "plain"))
+
+    await aiosmtplib.send(
+        msg,
+        hostname="smtp.gmail.com",
+        port=587,
+        start_tls=True,
+        username=settings.gmail_user,
+        password=settings.gmail_app_password,
+    )

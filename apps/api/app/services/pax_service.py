@@ -42,6 +42,10 @@ class PaxService:
             )
         except Exception as e:
             logger.error(f"Error during analysis: {str(e)}")
+            # Re-raise quota exhaustion errors so they can be handled properly
+            error_str = str(e).lower()
+            if 'insufficient_quota' in error_str or '429' in error_str:
+                raise
             latency_ms = int((time.time() - start_time) * 1000)
             return PaxAnalyzeResponse(
                 pax="Analysis failed.",

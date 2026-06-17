@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     gmail_user: str = ""
     gmail_app_password: str = ""
 
+    # Admin Alerts
+    admin_email: str = "berichky@gmail.com"
+    admin_alert_from_email: str = "paridhigangwaldeveloper@gmail.com"
+
     class Config:
         env_file = str(Path(__file__).resolve().parent.parent.parent / ".env")
         env_file_encoding = "utf-8"
