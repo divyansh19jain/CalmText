@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { LuZap } from 'react-icons/lu';
 import mascotImg from '../assets/single-logo.png';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 
 const MascotAvatar = () => {
   const [failed, setFailed] = useState(false);
@@ -17,7 +20,34 @@ const MascotAvatar = () => {
   );
 };
 
-const ResultSection = ({ results, originalText, onNewAnalysis }) => {
+const ResultSection = ({ results, originalText, onNewAnalysis, token, onHistoryRefresh }) => {
+  const [ctText, setCtText] = useState('');
+  const [ctResult, setCtResult] = useState(null);
+  const [ctLoading, setCtLoading] = useState(false);
+
+  const handleClearText = async () => {
+    if (!ctText.trim()) return;
+    setCtLoading(true);
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const { data } = await axios.post(
+        `${API_BASE_URL}/pax/cleartext`,
+        { text: ctText },
+        { headers }
+      );
+      setCtResult(data);
+      setCtText('');
+      // Refresh history if callback provided
+      if (onHistoryRefresh) {
+        onHistoryRefresh();
+      }
+    } catch {
+      alert('Failed to analyze. Please try again.');
+    } finally {
+      setCtLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-5">
 
@@ -63,6 +93,37 @@ const ResultSection = ({ results, originalText, onNewAnalysis }) => {
         <button onClick={onNewAnalysis} className="btn-paws btn-paws-primary py-4 text-sm font-bold">
           Analyze Another Message
         </button>
+      </motion.div>
+
+      {/* ClearText Section */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.31 }}
+        className="reflection-box flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <MascotAvatar />
+          <span className="text-blue-600 font-bold text-sm tracking-tight">ClearText:</span>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <textarea
+            value={ctText}
+            onChange={(e) => setCtText(e.target.value)}
+            placeholder="Enter a message to analyze its tone and clarity..."
+            className="w-full p-3 border border-blue-200 rounded-lg text-sm font-serif text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none h-24"
+          />
+          <button
+            onClick={handleClearText}
+            disabled={ctLoading || !ctText.trim()}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {ctLoading ? 'Analyzing...' : 'Analyze'}
+          </button>
+        </div>
+
+        {ctResult && (
+          <div className="text-sm font-serif text-gray-700 whitespace-pre-wrap leading-relaxed border-t border-blue-100 pt-3">
+            {ctResult.feedback}
+          </div>
+        )}
       </motion.div>
 
       {/* Footer */}

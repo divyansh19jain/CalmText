@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import ResultSection from "./components/ResultSection";
 import ClearTextResult from "./components/ClearTextResult";
 import OwnVoiceResult from "./components/OwnVoiceResult";
+import QuotaExhaustedModal from "./components/QuotaExhaustedModal";
 import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./context/AuthContext";
 import mascotImg from "./assets/pax_mascot-update-01-copy.png";
@@ -34,7 +35,6 @@ const TRIAL_KEY = "ct_free_trials";
 
 const MODES = [
   { value: "input", label: "I Received This", Icon: LuMessageSquare },
-  { value: "output", label: "I Want To Say", Icon: LuFileText },
   { value: "cleartext", label: "ClearText", Icon: LuAlignLeft },
   { value: "voice", label: "Own Voice", Icon: LuFeather, pro: true },
 ];
@@ -51,6 +51,7 @@ const App = () => {
   const [analyzedText, setAnalyzedText] = useState("");
   const [ctText, setCtText] = useState("");
   const [ctResult, setCtResult] = useState(null);
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
 
   // Own Voice (pro): voice sample + intent → message in your voice
   const [voiceSample, setVoiceSample] = useState(
@@ -110,6 +111,16 @@ const App = () => {
     localStorage.setItem(TRIAL_KEY, String(next));
   };
 
+  // Check if error is due to quota exhaustion
+  const isQuotaExhausted = (error) => {
+    return (
+      error?.response?.status === 429 ||
+      error?.message?.includes('429') ||
+      error?.message?.includes('insufficient_quota') ||
+      error?.response?.data?.error?.code === 'insufficient_quota'
+    );
+  };
+
   const handleAnalyze = async () => {
     // Own Voice is a signed-in (pro) feature
     if (mode === "voice") {
@@ -136,8 +147,12 @@ const App = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setHistoryItems(h.data.items || []);
-      } catch {
-        setError("Couldn't write that. Please try again.");
+      } catch (err) {
+        if (isQuotaExhausted(err)) {
+          setShowQuotaModal(true);
+        } else {
+          setError("Couldn't write that. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
@@ -152,13 +167,27 @@ const App = () => {
       setCtResult(null);
       setError(null);
       try {
-        const { data } = await axios.post(`${API_BASE_URL}/pax/cleartext`, {
-          text: ctText,
-        });
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const { data } = await axios.post(
+          `${API_BASE_URL}/pax/cleartext`,
+          { text: ctText },
+          { headers }
+        );
         setCtResult(data);
         consumeTrial();
-      } catch {
-        setError("Analysis failed. Please try again.");
+        // Refresh history after ClearText analysis
+        if (isAuthenticated) {
+          const h = await axios.get(`${API_BASE_URL}/history`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setHistoryItems(h.data.items || []);
+        }
+      } catch (err) {
+        if (isQuotaExhausted(err)) {
+          setShowQuotaModal(true);
+        } else {
+          setError("Analysis failed. Please try again.");
+        }
       } finally {
         setLoading(false);
       }
@@ -185,8 +214,12 @@ const App = () => {
         });
         setHistoryItems(h.data.items || []);
       }
-    } catch {
-      setError("Analysis failed. Please try again.");
+    } catch (err) {
+      if (isQuotaExhausted(err)) {
+        setShowQuotaModal(true);
+      } else {
+        setError("Analysis failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -230,6 +263,36 @@ const App = () => {
     const d = new Date(iso);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
+
+  // Group history items by message text (normalized) - show one entry per unique message
+  const groupedHistory = (() => {
+    const grouped = new Map();
+    historyItems.forEach((item) => {
+      // Normalize text: trim whitespace, remove punctuation, convert to lowercase
+      const normalizedText = item.text
+        .trim()
+        .toLowerCase()
+        .replace(/[.,!?;:—\-()]/g, '') // Remove common punctuation
+        .replace(/\s+/g, ' '); // Collapse multiple spaces into one
+
+      if (!grouped.has(normalizedText)) {
+        grouped.set(normalizedText, {
+          text: item.text, // Keep original text
+          items: [],
+          latestDate: item.created_at,
+        });
+      }
+      grouped.get(normalizedText).items.push(item);
+      // Update to latest date
+      if (new Date(item.created_at) > new Date(grouped.get(normalizedText).latestDate)) {
+        grouped.get(normalizedText).latestDate = item.created_at;
+      }
+    });
+    // Sort by latest date and return array
+    return Array.from(grouped.values()).sort(
+      (a, b) => new Date(b.latestDate) - new Date(a.latestDate)
+    );
+  })();
 
   const activeText =
     mode === "cleartext" ? ctText : mode === "voice" ? intent : inputText;
@@ -455,6 +518,15 @@ const App = () => {
                     originalText={analyzedText}
                     onNewAnalysis={reset}
                     mode={mode}
+                    token={token}
+                    onHistoryRefresh={async () => {
+                      if (isAuthenticated) {
+                        const h = await axios.get(`${API_BASE_URL}/history`, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        setHistoryItems(h.data.items || []);
+                      }
+                    }}
                   />
                 </motion.div>
               )}
@@ -746,57 +818,7 @@ const App = () => {
           </div>
         </main>
 
-        {/* ─── MOBILE HISTORY (shown < 1024px, only when signed in) ─── */}
-        {isAuthenticated && (
-          <section className="mobile-history">
-            <div
-              className="flex items-center gap-2.5 px-5 py-3.5 flex-shrink-0"
-              style={{ borderBottom: "1px solid rgba(37,99,235,0.07)" }}
-            >
-              <LuClock className="w-4 h-4 text-blue-400 flex-shrink-0" />
-              <span className="text-sm font-bold text-gray-800">History</span>
-            </div>
-            <div className="px-3 py-3">
-              {historyLoading ? (
-                <p className="text-xs text-blue-300 text-center py-6">Loading...</p>
-              ) : historyItems.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-6">
-                  No searches yet. Analyze a message to get started.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-0.5">
-                  {historyItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleReplay(item)}
-                      className="history-sidebar-item group"
-                    >
-                      <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                        style={{ background: "rgba(37,99,235,0.07)" }}
-                      >
-                        <LuRotateCcw className="w-3 h-3 text-blue-400 group-hover:text-blue-600 transition-colors" />
-                      </div>
-                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-gray-800 truncate leading-tight">
-                          {item.text}
-                        </p>
-                        <p className="text-[11px] text-gray-400 line-clamp-1 leading-tight">
-                          {item.pax}
-                        </p>
-                        <span className="text-[10px] text-blue-300">
-                          {formatDate(item.created_at)}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        {/* ─── RIGHT SIDEBAR: HISTORY (desktop ≥1024px) ─── */}
+        {/* ─── RIGHT SIDEBAR: HISTORY ─── */}
         <aside className="sidebar-right">
           {/* Header */}
           <div
@@ -842,11 +864,15 @@ const App = () => {
               </div>
             ) : (
               <div className="flex flex-col gap-0.5">
-                {historyItems.map((item) => (
+                {groupedHistory.map((group) => (
                   <button
-                    key={item.id}
-                    onClick={() => handleReplay(item)}
-                    className="history-sidebar-item group"
+                    key={group.text}
+                    onClick={() => {
+                      // If multiple analyses for same message, show the first one (Pax analysis)
+                      const primaryItem = group.items.find(i => i.mode !== "cleartext") || group.items[0];
+                      handleReplay(primaryItem);
+                    }}
+                    className="history-sidebar-item group relative"
                   >
                     <div
                       className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
@@ -856,13 +882,14 @@ const App = () => {
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                       <p className="text-xs font-semibold text-gray-800 truncate leading-tight">
-                        {item.text}
+                        {group.text}
                       </p>
                       <p className="text-[11px] text-gray-400 line-clamp-1 leading-tight">
-                        {item.pax}
+                        {group.items[0].pax}
                       </p>
                       <span className="text-[10px] text-blue-300">
-                        {formatDate(item.created_at)}
+                        {formatDate(group.latestDate)}
+                        {group.items.length > 1 && ` · ${group.items.length} analyses`}
                       </span>
                     </div>
                   </button>
@@ -873,6 +900,12 @@ const App = () => {
         </aside>
       </div>
       {/* end app-layout */}
+
+      {/* Quota Exhausted Modal */}
+      <QuotaExhaustedModal
+        isOpen={showQuotaModal}
+        onClose={() => setShowQuotaModal(false)}
+      />
     </div>
   );
 };
