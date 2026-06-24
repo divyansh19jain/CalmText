@@ -18,6 +18,7 @@ import {
 } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import ResultSection from "./components/ResultSection";
+import ThreadView from "./components/ThreadView";
 import ClearTextResult from "./components/ClearTextResult";
 import OwnVoiceResult from "./components/OwnVoiceResult";
 import QuotaExhaustedModal from "./components/QuotaExhaustedModal";
@@ -49,6 +50,8 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [analyzedText, setAnalyzedText] = useState("");
+  const [conversationId, setConversationId] = useState(null);
+  const [thread, setThread] = useState(null);
   const [ctText, setCtText] = useState("");
   const [ctResult, setCtResult] = useState(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
@@ -197,15 +200,21 @@ const App = () => {
     setLoading(true);
     setResults(null);
     setError(null);
+    // New conversation: incoming message + its outgoing drafts share this id
+    const convId =
+      (typeof crypto !== "undefined" && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `conv_${Date.now()}_${Math.round(Math.random() * 1e6)}`;
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const { data } = await axios.post(
         `${API_BASE_URL}/pax/analyze`,
-        { text: inputText, mode },
+        { text: inputText, mode, conversation_id: convId },
         { headers },
       );
       setResults(data);
       setAnalyzedText(inputText);
+      setConversationId(convId);
       consumeTrial();
       // Refresh history after analysis
       if (isAuthenticated) {
@@ -229,10 +238,19 @@ const App = () => {
     setResults(null);
     setCtResult(null);
     setVoiceResult(null);
+    setThread(null);
     setInputText("");
     setCtText("");
     setIntent("");
     setError(null);
+  };
+
+  // Open a full conversation thread (incoming + its outgoing drafts) read-only
+  const handleOpenThread = (group) => {
+    setResults(null);
+    setCtResult(null);
+    setVoiceResult(null);
+    setThread(group.items);
   };
 
   const handleLogout = () => {
@@ -255,6 +273,7 @@ const App = () => {
       setCtResult({ feedback: item.pax, latency_ms: 0 });
     } else {
       setAnalyzedText(item.text);
+      setConversationId(item.conversation_id || null);
       setResults({ pax: item.pax, subtext: item.subtext, latency_ms: 0 });
     }
   };
@@ -264,31 +283,39 @@ const App = () => {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  // Group history items by message text (normalized) - show one entry per unique message
+  // Group history into conversations.
+  // Items sharing a conversation_id (an incoming message + its outgoing drafts)
+  // collapse into one entry. Legacy rows without a conversation_id fall back to
+  // grouping by their normalized text.
   const groupedHistory = (() => {
     const grouped = new Map();
     historyItems.forEach((item) => {
-      // Normalize text: trim whitespace, remove punctuation, convert to lowercase
-      const normalizedText = item.text
-        .trim()
-        .toLowerCase()
-        .replace(/[.,!?;:—\-()]/g, '') // Remove common punctuation
-        .replace(/\s+/g, ' '); // Collapse multiple spaces into one
+      const key = item.conversation_id
+        ? `conv:${item.conversation_id}`
+        : `text:${item.text
+            .trim()
+            .toLowerCase()
+            .replace(/[.,!?;:—\-()]/g, '')
+            .replace(/\s+/g, ' ')}`;
 
-      if (!grouped.has(normalizedText)) {
-        grouped.set(normalizedText, {
-          text: item.text, // Keep original text
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          text: item.text,
           items: [],
           latestDate: item.created_at,
         });
       }
-      grouped.get(normalizedText).items.push(item);
-      // Update to latest date
-      if (new Date(item.created_at) > new Date(grouped.get(normalizedText).latestDate)) {
-        grouped.get(normalizedText).latestDate = item.created_at;
+      const group = grouped.get(key);
+      group.items.push(item);
+      if (new Date(item.created_at) > new Date(group.latestDate)) {
+        group.latestDate = item.created_at;
       }
     });
-    // Sort by latest date and return array
+    // For each conversation, title it with the incoming ("input") message if present
+    grouped.forEach((group) => {
+      const incoming = group.items.find((i) => i.mode === "input");
+      if (incoming) group.text = incoming.text;
+    });
     return Array.from(grouped.values()).sort(
       (a, b) => new Date(b.latestDate) - new Date(a.latestDate)
     );
@@ -296,7 +323,7 @@ const App = () => {
 
   const activeText =
     mode === "cleartext" ? ctText : mode === "voice" ? intent : inputText;
-  const isResultVisible = results || ctResult || voiceResult;
+  const isResultVisible = results || ctResult || voiceResult || thread;
   const voiceReady = voiceSample.trim() && intent.trim();
 
   return (
@@ -449,9 +476,11 @@ const App = () => {
               )}
               <span className="text-sm font-semibold text-gray-700">
                 {isResultVisible
-                  ? results
-                    ? "Analysis Result"
-                    : "ClearText Result"
+                  ? thread
+                    ? "Conversation"
+                    : results
+                      ? "Analysis Result"
+                      : "ClearText Result"
                   : MODES.find((m) => m.value === mode)?.label}
               </span>
             </div>
@@ -519,6 +548,7 @@ const App = () => {
                     onNewAnalysis={reset}
                     mode={mode}
                     token={token}
+                    conversationId={conversationId}
                     onHistoryRefresh={async () => {
                       if (isAuthenticated) {
                         const h = await axios.get(`${API_BASE_URL}/history`, {
@@ -528,6 +558,18 @@ const App = () => {
                       }
                     }}
                   />
+                </motion.div>
+              )}
+
+              {/* Conversation thread (read-only view from history) */}
+              {!loading && thread && (
+                <motion.div
+                  key="thread"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-full max-w-2xl mx-auto"
+                >
+                  <ThreadView items={thread} onNewAnalysis={reset} />
                 </motion.div>
               )}
 
@@ -564,7 +606,7 @@ const App = () => {
               )}
 
               {/* Home */}
-              {!loading && !results && !ctResult && !voiceResult && (
+              {!loading && !results && !ctResult && !voiceResult && !thread && (
                 <motion.div
                   key="home"
                   initial={{ opacity: 0, y: 8 }}
@@ -868,9 +910,16 @@ const App = () => {
                   <button
                     key={group.text}
                     onClick={() => {
-                      // If multiple analyses for same message, show the first one (Pax analysis)
-                      const primaryItem = group.items.find(i => i.mode !== "cleartext") || group.items[0];
-                      handleReplay(primaryItem);
+                      // Pax conversations (incoming/outgoing) open as a full thread;
+                      // standalone ClearText / Own Voice items replay as before.
+                      const hasConversation = group.items.some(
+                        (i) => i.mode === "input" || i.mode === "output",
+                      );
+                      if (hasConversation) {
+                        handleOpenThread(group);
+                      } else {
+                        handleReplay(group.items[0]);
+                      }
                     }}
                     className="history-sidebar-item group relative"
                   >
@@ -885,11 +934,11 @@ const App = () => {
                         {group.text}
                       </p>
                       <p className="text-[11px] text-gray-400 line-clamp-1 leading-tight">
-                        {group.items[0].pax}
+                        {(group.items.find((i) => i.mode === "input") || group.items[0]).pax}
                       </p>
                       <span className="text-[10px] text-blue-300">
                         {formatDate(group.latestDate)}
-                        {group.items.length > 1 && ` · ${group.items.length} analyses`}
+                        {group.items.length > 1 && ` · ${group.items.length} in thread`}
                       </span>
                     </div>
                   </button>
