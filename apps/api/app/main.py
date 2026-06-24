@@ -46,6 +46,16 @@ async def create_tables():
     logger.info(f"DATABASE_URL: {settings.database_url}")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Lightweight idempotent migrations: create_all does not add new
+        # columns to tables that already exist, so patch them here.
+        await conn.execute(text(
+            "ALTER TABLE search_history "
+            "ADD COLUMN IF NOT EXISTS conversation_id VARCHAR(64)"
+        ))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_search_history_conversation_id "
+            "ON search_history (conversation_id)"
+        ))
         result = await conn.execute(text("SELECT COUNT(*) FROM users"))
         user_count = result.scalar()
         result2 = await conn.execute(text("SELECT COUNT(*) FROM search_history"))
