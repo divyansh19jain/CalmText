@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     model_provider: str = "mock"
     openai_api_key: str = ""
     anthropic_api_key: str = ""
+    mistral_api_key: str = ""
+    mistral_model: str = "mistral-small-latest"
 
     # PostgreSQL
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/calmtext"

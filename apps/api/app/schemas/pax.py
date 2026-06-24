@@ -5,6 +5,7 @@ class PaxAnalyzeRequest(BaseModel):
     text: str = Field(..., description="The user input text to analyze")
     mode: Literal["input", "output"] = Field(..., description="The context: 'input' for received messages, 'output' for drafting")
     prompt_version: Optional[str] = Field(None, description="Optional specific prompt version to use")
+    conversation_id: Optional[str] = Field(None, description="Groups an incoming message and its outgoing drafts into one conversation")
 
 class PaxAnalyzeResponse(BaseModel):
     pax: str

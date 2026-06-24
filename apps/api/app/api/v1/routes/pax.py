@@ -51,6 +51,8 @@ async def _save_history(db: AsyncSession, user, result: PaxAnalyzeResponse, requ
         existing_entry.mode = request.mode
         existing_entry.pax = result.pax
         existing_entry.subtext = result.subtext
+        if request.conversation_id:
+            existing_entry.conversation_id = request.conversation_id
         await db.commit()
     else:
         # Create new entry only if message doesn't exist
@@ -58,6 +60,7 @@ async def _save_history(db: AsyncSession, user, result: PaxAnalyzeResponse, requ
             user_id=user.id,
             text=request.text,
             mode=request.mode,
+            conversation_id=request.conversation_id,
             pax=result.pax,
             subtext=result.subtext,
         )

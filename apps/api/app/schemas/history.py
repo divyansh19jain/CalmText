@@ -5,6 +5,7 @@ class HistoryItem(BaseModel):
     id: int
     text: str
     mode: str
+    conversation_id: str | None = None
     pax: str
     subtext: str
     created_at: datetime

@@ -10,6 +10,7 @@ class SearchHistory(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     mode: Mapped[str] = mapped_column(String(20), nullable=False)
+    conversation_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     pax: Mapped[str] = mapped_column(Text, nullable=False)
     subtext: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(

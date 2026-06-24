@@ -7,6 +7,7 @@ from app.clients.llm_client import LLMClient
 from app.clients.mock_llm_client import MockLLMClient
 from app.clients.openai_client import OpenAIClient
 from app.clients.claude_client import ClaudeClient
+from app.clients.mistral_client import MistralClient
 from app.core.config import settings
 from app.core.security import decode_access_token
 from app.db.session import get_db
@@ -16,6 +17,8 @@ bearer_scheme = HTTPBearer(auto_error=False)
 def get_llm_client() -> LLMClient:
     if settings.model_provider == "openai":
         return OpenAIClient()
+    if settings.model_provider == "mistral":
+        return MistralClient()
     return MockLLMClient()
 
 def get_claude_client() -> LLMClient:
