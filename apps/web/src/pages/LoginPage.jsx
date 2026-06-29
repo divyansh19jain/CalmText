@@ -26,7 +26,13 @@ const LoginPage = () => {
       login(data);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err.response?.data?.detail || 'Something went wrong. Please try again.');
+      const detail = err.response?.data?.detail;
+      const message = Array.isArray(detail)
+        ? detail.map((d) => d.msg).join(', ')
+        : typeof detail === 'string'
+          ? detail
+          : 'Something went wrong. Please try again.';
+      setError(message);
     } finally {
       setLoading(false);
     }
