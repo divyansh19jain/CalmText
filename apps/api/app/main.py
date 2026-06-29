@@ -56,6 +56,14 @@ async def create_tables():
             "CREATE INDEX IF NOT EXISTS ix_search_history_conversation_id "
             "ON search_history (conversation_id)"
         ))
+        await conn.execute(text(
+            "ALTER TABLE users "
+            "ADD COLUMN IF NOT EXISTS has_unlimited_search_access BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users "
+            "ADD COLUMN IF NOT EXISTS search_count INTEGER NOT NULL DEFAULT 0"
+        ))
         result = await conn.execute(text("SELECT COUNT(*) FROM users"))
         user_count = result.scalar()
         result2 = await conn.execute(text("SELECT COUNT(*) FROM search_history"))
