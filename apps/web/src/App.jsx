@@ -22,6 +22,7 @@ import ThreadView from "./components/ThreadView";
 import ClearTextResult from "./components/ClearTextResult";
 import OwnVoiceResult from "./components/OwnVoiceResult";
 import QuotaExhaustedModal from "./components/QuotaExhaustedModal";
+import UpgradeModal from "./components/UpgradeModal";
 import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./context/AuthContext";
 import mascotImg from "./assets/pax_mascot-update-01-copy.png";
@@ -30,9 +31,12 @@ import mascotSingleImg from "./assets/single-logo.png";
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
 
-// Free trials for anonymous users before login is required
+// Free analyses everyone gets before the upgrade popup appears
 const FREE_TRIAL_LIMIT = 3;
-const TRIAL_KEY = "ct_free_trials";
+// Tracked per-user so each new account gets its own 3 free analyses.
+// Anonymous visitors share the "guest" bucket.
+const TRIAL_KEY_PREFIX = "ct_free_trials";
+const trialKeyFor = (user) => `${TRIAL_KEY_PREFIX}_${user?.id ?? "guest"}`;
 
 const MODES = [
   { value: "input", label: "I Received This", Icon: LuMessageSquare },
@@ -55,6 +59,7 @@ const App = () => {
   const [ctText, setCtText] = useState("");
   const [ctResult, setCtResult] = useState(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Own Voice (pro): voice sample + intent → message in your voice
   const [voiceSample, setVoiceSample] = useState(
@@ -67,11 +72,17 @@ const App = () => {
   const [historyItems, setHistoryItems] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  // Free-trial tracking for anonymous users
-  const [trialsUsed, setTrialsUsed] = useState(
-    () => Number(localStorage.getItem(TRIAL_KEY)) || 0,
-  );
+  // Backend search usage for the logged-in user ({ remaining, has_unlimited_search_access })
+  const [usage, setUsage] = useState(null);
+
+  // Free-trial tracking — per user (each account gets its own 3 free analyses)
+  const [trialsUsed, setTrialsUsed] = useState(0);
   const trialsLeft = Math.max(0, FREE_TRIAL_LIMIT - trialsUsed);
+
+  // Load this user's trial count whenever the logged-in user changes
+  useEffect(() => {
+    setTrialsUsed(Number(localStorage.getItem(trialKeyFor(user))) || 0);
+  }, [user]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -94,25 +105,55 @@ const App = () => {
     load();
   }, [isAuthenticated, token]);
 
-  // Returns false (and redirects to login) if the anonymous user is out of free trials
+  // Returns false (and opens the upgrade popup) once the free analyses are used up.
+  // Logged-in users are governed by the backend (search limit + unlimited flag),
+  // so we only enforce the local limit for anonymous visitors here.
   const checkTrialAllowance = () => {
     if (isAuthenticated) return true;
     if (trialsUsed >= FREE_TRIAL_LIMIT) {
-      navigate("/login", {
-        state: { from: "trial", message: "You've used your 3 free Pax takes. Sign in to keep going — it's free." },
-      });
+      setShowUpgradeModal(true);
       return false;
     }
     return true;
   };
 
-  // Count one free trial for anonymous users
+  // Count one free analysis for anonymous users (logged-in users are counted by the backend)
   const consumeTrial = () => {
     if (isAuthenticated) return;
     const next = trialsUsed + 1;
     setTrialsUsed(next);
-    localStorage.setItem(TRIAL_KEY, String(next));
+    localStorage.setItem(trialKeyFor(user), String(next));
   };
+
+  // Refresh the logged-in user's remaining searches from the backend
+  const refreshUsage = async () => {
+    if (!isAuthenticated) {
+      setUsage(null);
+      return;
+    }
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/pax/usage`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsage(data);
+    } catch {
+      /* silent */
+    }
+  };
+
+  // Load usage whenever the logged-in user changes
+  useEffect(() => {
+    refreshUsage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, token]);
+
+  // Free searches left: backend count for logged-in users, local count for guests.
+  // null = unlimited / unknown → hide the hint.
+  const freeRemaining = !isAuthenticated
+    ? trialsLeft
+    : usage && !usage.has_unlimited_search_access
+      ? usage.remaining
+      : null;
 
   // Check if error is due to quota exhaustion
   const isQuotaExhausted = (error) => {
@@ -134,6 +175,7 @@ const App = () => {
         return;
       }
       if (!voiceSample.trim() || !intent.trim()) return;
+      if (!checkTrialAllowance()) return;
       setLoading(true);
       setVoiceResult(null);
       setError(null);
@@ -144,6 +186,8 @@ const App = () => {
           { headers: { Authorization: `Bearer ${token}` } },
         );
         setVoiceResult(data);
+        consumeTrial();
+        refreshUsage();
         localStorage.setItem("ct_voice_sample", voiceSample); // remember their voice
         // Refresh history so the new Own Voice entry shows up
         const h = await axios.get(`${API_BASE_URL}/history`, {
@@ -151,7 +195,10 @@ const App = () => {
         });
         setHistoryItems(h.data.items || []);
       } catch (err) {
-        if (isQuotaExhausted(err)) {
+        if (err?.response?.status === 402) {
+          setShowUpgradeModal(true);
+          refreshUsage();
+        } else if (isQuotaExhausted(err)) {
           setShowQuotaModal(true);
         } else {
           setError("Couldn't write that. Please try again.");
@@ -178,6 +225,7 @@ const App = () => {
         );
         setCtResult(data);
         consumeTrial();
+        refreshUsage();
         // Refresh history after ClearText analysis
         if (isAuthenticated) {
           const h = await axios.get(`${API_BASE_URL}/history`, {
@@ -186,7 +234,10 @@ const App = () => {
           setHistoryItems(h.data.items || []);
         }
       } catch (err) {
-        if (isQuotaExhausted(err)) {
+        if (err?.response?.status === 402) {
+          setShowUpgradeModal(true);
+          refreshUsage();
+        } else if (isQuotaExhausted(err)) {
           setShowQuotaModal(true);
         } else {
           setError("Analysis failed. Please try again.");
@@ -216,6 +267,7 @@ const App = () => {
       setAnalyzedText(inputText);
       setConversationId(convId);
       consumeTrial();
+      refreshUsage();
       // Refresh history after analysis
       if (isAuthenticated) {
         const h = await axios.get(`${API_BASE_URL}/history`, {
@@ -224,7 +276,10 @@ const App = () => {
         setHistoryItems(h.data.items || []);
       }
     } catch (err) {
-      if (isQuotaExhausted(err)) {
+      if (err?.response?.status === 402) {
+        setShowUpgradeModal(true);
+        refreshUsage();
+      } else if (isQuotaExhausted(err)) {
         setShowQuotaModal(true);
       } else {
         setError("Analysis failed. Please try again.");
@@ -771,18 +826,18 @@ const App = () => {
                     </p>
                   )}
 
-                  {/* Free-trial hint for anonymous users (non-voice modes) */}
-                  {mode !== "voice" && !isAuthenticated && (
+                  {/* Free-search hint — shown until the user has unlimited access */}
+                  {mode !== "voice" && freeRemaining !== null && (
                     <p className="text-center text-xs text-blue-400 -mt-2">
-                      {trialsLeft > 0 ? (
+                      {freeRemaining > 0 ? (
                         <>
-                          {trialsLeft} free{" "}
-                          {trialsLeft === 1 ? "take" : "takes"} left ·{" "}
+                          {freeRemaining} free{" "}
+                          {freeRemaining === 1 ? "take" : "takes"} left ·{" "}
                           <button
-                            onClick={() => navigate("/login")}
+                            onClick={() => setShowUpgradeModal(true)}
                             className="font-semibold text-blue-600 hover:text-blue-800 transition-colors"
                           >
-                            Sign in
+                            Upgrade
                           </button>{" "}
                           for unlimited
                         </>
@@ -790,10 +845,10 @@ const App = () => {
                         <>
                           You've used your free takes ·{" "}
                           <button
-                            onClick={() => navigate("/login")}
+                            onClick={() => setShowUpgradeModal(true)}
                             className="font-semibold text-blue-600 hover:text-blue-800 transition-colors"
                           >
-                            Sign in to continue
+                            Upgrade to continue
                           </button>
                         </>
                       )}
@@ -954,6 +1009,12 @@ const App = () => {
       <QuotaExhaustedModal
         isOpen={showQuotaModal}
         onClose={() => setShowQuotaModal(false)}
+      />
+
+      {/* Upgrade Modal — shown after free analyses are used up */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
       />
     </div>
   );
