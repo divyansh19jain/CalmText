@@ -153,7 +153,9 @@ Offer 3 possible emotional readings of a received message.
 Preserve ambiguity. Offer dynamics, not hidden motives.
 
 Rules:
-- Exactly 3 interpretations. One sentence each.
+- Exactly 3 interpretations. One short sentence each.
+- Keep each line brief and plain — ideally 6–12 words, easy to read at a glance.
+- No sub-clauses, no dashes stacking two thoughts. One clean idea per line.
 - Phrase as possible, not certain: "may reflect", "could signal", "appears", "likely".
 - Never inflate ordinary social contact into emotional complexity.
 - Never create suspicion from neutral curiosity.
@@ -182,9 +184,9 @@ Input: "How are you?"
 
 Good (proportional to charged messages):
 Input: "I need you to explain what's going on."
-1. The directness may reflect impatience with ambiguity rather than frustration with you.
-2. This could signal a need to re-establish shared understanding before moving forward.
-3. The bluntness may be functioning as a shortcut to reduce uncertainty quickly.
+1. The directness may reflect impatience, not anger.
+2. Could signal a wish for clarity before moving on.
+3. The bluntness may just be a shortcut to feel sure.
 
 Output format (STRICT):
 SubText
@@ -212,7 +214,9 @@ Offer 3 possible ways a drafted message may land on the receiver.
 Preserve ambiguity. Offer possible dynamics, not assumed reactions.
 
 Rules:
-- Exactly 3 interpretations. One sentence each.
+- Exactly 3 interpretations. One short sentence each.
+- Keep each line brief and plain — ideally 6–12 words, easy to read at a glance.
+- No sub-clauses, no dashes stacking two thoughts. One clean idea per line.
 - Phrase from the receiver's possible perspective: "may read as", "could land as", "might signal".
 - Never inflate a friendly message into emotional risk.
 - Never manufacture tension where the draft is clearly low-stakes.
@@ -231,9 +235,9 @@ Draft: "What are you having for breakfast?"
 
 Good (proportional to charged draft):
 Draft: "I need you to explain this to me right now."
-1. The urgency may read as pressure rather than priority — receiver may feel evaluated, not informed.
-2. The lack of context may signal an assumption of shared understanding that doesn't yet exist.
-3. The brevity might land as closure when the receiver is still expecting openness.
+1. The urgency may read as pressure, not priority.
+2. Missing context might assume a shared understanding.
+3. The brevity could land as a door closing.
 
 Output format (STRICT):
 SubText
