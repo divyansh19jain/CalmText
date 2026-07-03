@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { LuSend, LuPencil, LuTrash2, LuPawPrint, LuCheck } from 'react-icons/lu';
+import { LuSend, LuPencil, LuTrash2, LuPawPrint, LuFeather } from 'react-icons/lu';
 import mascotImg from '../assets/single-logo.png';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
@@ -24,7 +24,7 @@ const MascotAvatar = () => {
 // draft -> outgoing pause (PAX 2 + Subtext) -> Send As Is | Revise | Delete
 //   if Revise -> edit -> outgoing pause ONE final time -> Send | Don't Send/Delete
 // PAX 2 (the PAXism) always appears first, Subtext underneath. No third run.
-const OutgoingLoop = ({ token, onHistoryRefresh, conversationId }) => {
+const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }) => {
   // stages: draft | pause | revise | pauseFinal | sent | deleted
   const [stage, setStage] = useState('draft');
   const [draft, setDraft] = useState('');
@@ -196,16 +196,30 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId }) => {
           </motion.div>
         )}
 
-        {/* STAGE: Sent (decision made) */}
+        {/* STAGE: End of loop — Pax gently encourages a pause and hands off to Own Voice */}
         {stage === 'sent' && (
           <motion.div key="sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="flex flex-col items-center gap-3 py-4">
-            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <LuCheck className="w-6 h-6 text-blue-600" />
+            className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <LuPawPrint className="w-6 h-6 text-blue-600" />
+              </div>
             </div>
-            <p className="text-sm font-serif text-gray-700 text-center">
-              Sent with a clear head. Pax walked with you on this one.
-            </p>
+            <div className="reflection-box">
+              <p className="text-sm font-serif text-gray-700 leading-relaxed text-center">
+                🐾 “Woof… my nose says it’s time for a pause. Leave this trail here and take
+                about a 30-second sniff break. If you still want to reply when you get back,
+                I’ll help you say it in your own voice.”
+              </p>
+            </div>
+            {onUseOwnVoice && (
+              <button
+                onClick={onUseOwnVoice}
+                className="flex items-center justify-center gap-2 py-3 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
+              >
+                <LuFeather className="w-4 h-4" /> Say it in my own voice
+              </button>
+            )}
             <button onClick={restart} className="text-xs font-semibold text-blue-500 hover:text-blue-700 transition-colors">
               Write another reply
             </button>

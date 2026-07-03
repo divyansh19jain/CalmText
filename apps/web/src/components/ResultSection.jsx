@@ -18,7 +18,7 @@ const MascotAvatar = () => {
   );
 };
 
-const ResultSection = ({ results, originalText, onNewAnalysis, token, onHistoryRefresh, conversationId }) => {
+const ResultSection = ({ results, originalText, onNewAnalysis, onUseOwnVoice, token, onHistoryRefresh, conversationId }) => {
   return (
     <div className="flex flex-col gap-5">
 
@@ -60,7 +60,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis, token, onHistoryR
       )}
 
       {/* Outgoing Message Loop — draft a reply, pause with PAX 2 + Subtext, decide */}
-      <OutgoingLoop token={token} onHistoryRefresh={onHistoryRefresh} conversationId={conversationId} />
+      <OutgoingLoop token={token} onHistoryRefresh={onHistoryRefresh} conversationId={conversationId} onUseOwnVoice={onUseOwnVoice} />
 
       {/* CTA */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.40 }}>

@@ -300,6 +300,13 @@ const App = () => {
     setError(null);
   };
 
+  // Pax's end-of-loop nudge: send the user into the existing Own Voice flow.
+  // Clears the current result view and drops them on the Own Voice input screen.
+  const handleUseOwnVoice = () => {
+    reset();
+    setMode("voice");
+  };
+
   // Open a full conversation thread (incoming + its outgoing drafts) read-only
   const handleOpenThread = (group) => {
     setResults(null);
@@ -601,6 +608,7 @@ const App = () => {
                     results={results}
                     originalText={analyzedText}
                     onNewAnalysis={reset}
+                    onUseOwnVoice={handleUseOwnVoice}
                     mode={mode}
                     token={token}
                     conversationId={conversationId}
