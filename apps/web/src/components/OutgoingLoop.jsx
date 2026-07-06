@@ -67,7 +67,7 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
       <div className="reflection-box flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <MascotAvatar />
-          <span className="text-blue-600 font-bold text-sm tracking-tight">Pax's Take:</span>
+          <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">Pax's Take:</span>
         </div>
         <div className="text-base font-serif text-gray-800 whitespace-pre-wrap leading-relaxed">
           {result?.pax}
@@ -78,7 +78,7 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
         <div className="reflection-box flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <MascotAvatar />
-            <span className="text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
+            <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
           </div>
           <div className="text-sm font-serif text-gray-600 whitespace-pre-wrap leading-relaxed">
             {result.subtext.replace(/^SubText\s*\n?/, '').trim()}
@@ -97,7 +97,7 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
     >
       <div className="flex items-center gap-3">
         <MascotAvatar />
-        <span className="text-blue-600 font-bold text-sm tracking-tight">
+        <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">
           Now writing back?
         </span>
       </div>
@@ -131,8 +131,8 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
         {stage === 'pause' && (
           <motion.div key="pause" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="flex flex-col gap-4">
-            <div className="rounded-lg bg-blue-50/60 border border-blue-100 p-3">
-              <p className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-1.5">Your draft</p>
+            <div className="draft-box rounded-lg bg-blue-50/60 border border-blue-100 p-3">
+              <p className="draft-label text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-1.5">Your draft</p>
               <p className="text-sm font-serif text-gray-700 whitespace-pre-wrap">{draft}</p>
             </div>
             <PauseOutput />
@@ -142,7 +142,7 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
                 <LuSend className="w-3.5 h-3.5" /> Send As Is
               </button>
               <button onClick={() => setStage('revise')}
-                className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 hover:bg-blue-100 transition-colors">
+                className="revise-btn flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 hover:bg-blue-100 transition-colors">
                 <LuPencil className="w-3.5 h-3.5" /> Revise
               </button>
               <button onClick={() => setStage('deleted')}
@@ -178,8 +178,8 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
         {stage === 'pauseFinal' && (
           <motion.div key="pauseFinal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="flex flex-col gap-4">
-            <div className="rounded-lg bg-blue-50/60 border border-blue-100 p-3">
-              <p className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-1.5">Your revised message</p>
+            <div className="draft-box rounded-lg bg-blue-50/60 border border-blue-100 p-3">
+              <p className="draft-label text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-1.5">Your revised message</p>
               <p className="text-sm font-serif text-gray-700 whitespace-pre-wrap">{draft}</p>
             </div>
             <PauseOutput />

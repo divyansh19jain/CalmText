@@ -58,7 +58,7 @@ const ThreadView = ({ items, onNewAnalysis }) => {
               <div className="reflection-box flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <MascotAvatar />
-                  <span className="text-blue-600 font-bold text-sm tracking-tight">Pax's Take:</span>
+                  <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">Pax's Take:</span>
                 </div>
                 <div className="text-base font-serif text-gray-800 whitespace-pre-wrap leading-relaxed">
                   {item.pax}
@@ -71,7 +71,7 @@ const ThreadView = ({ items, onNewAnalysis }) => {
               <div className="reflection-box flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <MascotAvatar />
-                  <span className="text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
+                  <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
                 </div>
                 <div className="text-sm font-serif text-gray-600 whitespace-pre-wrap leading-relaxed">
                   {cleanSubtext(item.subtext)}

@@ -239,6 +239,16 @@
 .dark .border-gray-200 { border-color: var(--surface-border) !important; }
 .dark .border-blue-100 { border-color: var(--accent-border) !important; }
 
+/* Section headings (Pax's Take / SubText / Now writing back?) — white in dark mode for readability */
+.dark .pax-label { color: #ffffff !important; }
+
+/* Draft preview box — give it a dark surface in dark mode so its text stays visible */
+.dark .draft-box { background-color: var(--accent-soft) !important; border-color: var(--accent-border) !important; }
+.dark .draft-label { color: #93c5fd !important; }
+
+/* Revise button — white label in dark mode */
+.dark .revise-btn { color: #ffffff !important; }
+
 /* ─────────────────────────────────────────────
    NAV ITEMS
 ───────────────────────────────────────────── */
