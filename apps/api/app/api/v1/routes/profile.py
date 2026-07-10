@@ -17,6 +17,10 @@ class ProfileResponse(BaseModel):
     username: Optional[str] = None
     mobile: Optional[str] = None
     created_at: Optional[datetime] = None
+    # Subscription info
+    has_unlimited_search_access: bool = False
+    subscription_status: Optional[str] = None
+    subscription_plan: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

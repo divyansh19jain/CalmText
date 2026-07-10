@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from pydantic import BaseModel, EmailStr
 from app.db.session import get_db
 from app.models.user import User
@@ -25,21 +25,36 @@ router = APIRouter()
 
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def signup(body: SignupRequest, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.email == body.email))
-    if result.scalar_one_or_none():
+    email = (body.email or "").strip()
+    username = (body.username or "").strip()
+    mobile = (body.mobile or "").strip()
+
+    # Email — required + unique (case-insensitive). .first() tolerates any
+    # pre-existing duplicate rows without raising.
+    dup = await db.execute(select(User).where(func.lower(User.email) == email.lower()))
+    if dup.scalars().first():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    if body.username:
-        dup = await db.execute(select(User).where(User.username == body.username))
-        if dup.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Username already taken")
+    # Username — required + unique (case-insensitive)
+    if not username:
+        raise HTTPException(status_code=400, detail="Username is required")
+    dup = await db.execute(select(User).where(func.lower(User.username) == username.lower()))
+    if dup.scalars().first():
+        raise HTTPException(status_code=400, detail="Username already taken")
+
+    # Mobile — required + unique
+    if not mobile:
+        raise HTTPException(status_code=400, detail="Mobile number is required")
+    dup = await db.execute(select(User).where(User.mobile == mobile))
+    if dup.scalars().first():
+        raise HTTPException(status_code=400, detail="Mobile number already registered")
 
     user = User(
-        email=body.email,
+        email=email,
         hashed_password=hash_password(body.password),
         name=body.name,
-        username=body.username,
-        mobile=body.mobile,
+        username=username,
+        mobile=mobile,
     )
     db.add(user)
     await db.commit()

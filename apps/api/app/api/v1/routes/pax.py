@@ -7,7 +7,7 @@ from app.schemas.pax import PaxAnalyzeRequest, PaxAnalyzeResponse, PaxFeedbackRe
 from app.prompts.pax_variants import CLEARTEXT_V1_PROMPT, OWNVOICE_V1_PROMPT
 from app.services.pax_service import PaxService
 from app.services.feedback_service import FeedbackService
-from app.core.dependencies import get_llm_client, get_claude_client, get_optional_user, get_current_user
+from app.core.dependencies import get_llm_client, get_claude_client, get_optional_user, get_current_user, apply_user_model_tier
 from app.core.email_service import send_admin_notification
 from app.clients.llm_client import LLMClient
 from app.db.session import get_db
@@ -113,6 +113,7 @@ async def analyze_pax(
     current_user=Depends(get_optional_user),
 ):
     _check_search_limit(current_user)
+    apply_user_model_tier(llm_client, current_user)
     try:
         service = PaxService(llm_client)
         result = await service.analyze(request)
@@ -136,6 +137,7 @@ async def analyze_claude(
     current_user=Depends(get_optional_user),
 ):
     _check_search_limit(current_user)
+    apply_user_model_tier(llm_client, current_user)
     try:
         service = PaxService(llm_client)
         result = await service.analyze(request)
@@ -161,6 +163,7 @@ async def analyze_cleartext(
     from sqlalchemy import select, func
 
     _check_search_limit(current_user)
+    apply_user_model_tier(llm_client, current_user)
     start = time.time()
     try:
         feedback, _ = await llm_client.generate_completion(CLEARTEXT_V1_PROMPT, request.text)
@@ -212,6 +215,7 @@ async def write_own_voice(
     current_user=Depends(get_optional_user),
 ):
     _check_search_limit(current_user)
+    apply_user_model_tier(llm_client, current_user)
     start = time.time()
     user_text = (
         f"VOICE SAMPLE (how I write):\n{request.voice_sample}\n\n"

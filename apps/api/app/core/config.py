@@ -13,6 +13,17 @@ class Settings(BaseSettings):
     mistral_api_key: str = ""
     mistral_model: str = "mistral-small-latest"
 
+    # Model tiers: free-trial users vs. paid subscribers
+    openai_free_model: str = "gpt-4o-mini"
+    openai_paid_model: str = "gpt-5-mini"
+
+    # Stripe (use TEST / sandbox keys until go-live)
+    stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""
+    stripe_webhook_secret: str = ""
+    # Base URL of the web app; Stripe Checkout redirects back here
+    frontend_url: str = "http://localhost:5173"
+
     # PostgreSQL
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/calmtext"
 

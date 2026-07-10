@@ -24,6 +24,18 @@ def get_llm_client() -> LLMClient:
 def get_claude_client() -> LLMClient:
     return ClaudeClient()
 
+def apply_user_model_tier(llm_client: LLMClient, user) -> None:
+    """Upgrade a subscriber to the paid model; free/anon users keep the free model.
+
+    Only applies to providers that support runtime model switching (OpenAI).
+    """
+    if not hasattr(llm_client, "set_model"):
+        return
+    is_subscriber = bool(user is not None and getattr(user, "has_unlimited_search_access", False))
+    llm_client.set_model(
+        settings.openai_paid_model if is_subscriber else settings.openai_free_model
+    )
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),

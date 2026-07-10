@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.v1.routes import health, pax, auth, history, profile
+from app.api.v1.routes import health, pax, auth, history, profile, payments
 from app.db.base import Base
 from app.db.session import engine
 import app.models.user  # noqa: ensure models are registered
@@ -64,11 +64,41 @@ async def create_tables():
             "ALTER TABLE users "
             "ADD COLUMN IF NOT EXISTS search_count INTEGER NOT NULL DEFAULT 0"
         ))
+        # Stripe subscription columns
+        await conn.execute(text(
+            "ALTER TABLE users "
+            "ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255)"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users "
+            "ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255)"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users "
+            "ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50)"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users "
+            "ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR(50)"
+        ))
         result = await conn.execute(text("SELECT COUNT(*) FROM users"))
         user_count = result.scalar()
         result2 = await conn.execute(text("SELECT COUNT(*) FROM search_history"))
         history_count = result2.scalar()
         logger.info(f"DB STATE ON STARTUP: {user_count} users, {history_count} history records")
+
+    # Enforce unique mobile numbers (partial index allows multiple NULLs for
+    # legacy rows). Best-effort: skip if existing duplicates block creation so
+    # startup never crashes — the signup route enforces uniqueness regardless.
+    from app.core.logging import logger as _logger
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_mobile "
+                "ON users (mobile) WHERE mobile IS NOT NULL"
+            ))
+    except Exception as e:
+        _logger.warning(f"Could not create unique index on users.mobile (existing duplicates?): {e}")
 
 # Configure routing
 @app.get("/")
@@ -80,3 +110,4 @@ app.include_router(pax.router, prefix="/api/v1/pax", tags=["Pax"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(history.router, prefix="/api/v1/history", tags=["History"])
 app.include_router(profile.router, prefix="/api/v1/profile", tags=["Profile"])
+app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])

@@ -4,11 +4,17 @@ from app.clients.llm_client import LLMClient
 from app.core.config import settings
 
 class OpenAIClient(LLMClient):
-    def __init__(self):
+    def __init__(self, model_name: str | None = None):
         # Initializes using the api key from settings
         self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        # self._model_name = "gpt-5.4-nano" # Using a fast default model
-        self._model_name = "gpt-4o-mini"
+        # Defaults to the free-trial model; subscribers are upgraded via set_model().
+        self._model_name = model_name or settings.openai_free_model
+
+    def set_model(self, model_name: str) -> None:
+        """Switch the model used for subsequent completions (e.g. paid tier)."""
+        if model_name:
+            self._model_name = model_name
+
     async def generate_completion(self, system_prompt: str, user_text: str) -> Tuple[str, int]:
         response = await self.client.chat.completions.create(
             model=self._model_name,
