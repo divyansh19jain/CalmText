@@ -339,18 +339,42 @@ async def stripe_webhook(request: Request, db: AsyncSession = Depends(get_db)):
         user = await _user_by_customer(obj.get("customer"))
         if user:
             status = obj.get("status", "active")
-            if status in ("active", "trialing"):
+            # active/trialing → full access; past_due → keep access during
+            # Stripe's automatic retry (dunning) grace period.
+            if status in ("active", "trialing", "past_due"):
                 await _grant_access(
                     db, user, plan=user.subscription_plan,
                     subscription_id=obj.get("id"), status=status,
                 )
-            else:
+            else:  # canceled, unpaid, incomplete_expired, ...
                 await _revoke_access(db, user, status=status)
+
+    elif event_type in ("invoice.payment_succeeded", "invoice.paid"):
+        # Fires on every successful charge, including automatic monthly
+        # renewals — keep the subscription active for another period.
+        user = await _user_by_customer(obj.get("customer"))
+        if user and obj.get("subscription"):
+            await _grant_access(
+                db, user, plan=user.subscription_plan,
+                subscription_id=obj.get("subscription"), status="active",
+            )
+            reason = obj.get("billing_reason")
+            logger.info(f"Invoice paid for user {user.id} (reason={reason})")
+
+    elif event_type == "invoice.payment_failed":
+        # A renewal charge failed. Stripe will retry per its dunning settings;
+        # mark past_due but keep access until the subscription is truly ended
+        # (customer.subscription.deleted / unpaid).
+        user = await _user_by_customer(obj.get("customer"))
+        if user:
+            user.subscription_status = "past_due"
+            await db.commit()
+            logger.warning(f"Renewal payment failed for user {user.id} (past_due)")
 
     elif event_type == "customer.subscription.deleted":
         user = await _user_by_customer(obj.get("customer"))
         if user:
             await _revoke_access(db, user, status="canceled")
-            logger.info(f"Subscription cancelled for user {user.id}")
+            logger.info(f"Subscription ended for user {user.id}")
 
     return {"received": True}
