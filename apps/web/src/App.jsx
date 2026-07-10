@@ -23,6 +23,7 @@ import ClearTextResult from "./components/ClearTextResult";
 import OwnVoiceResult from "./components/OwnVoiceResult";
 import QuotaExhaustedModal from "./components/QuotaExhaustedModal";
 import UpgradeModal from "./components/UpgradeModal";
+import PaymentResultModal from "./components/PaymentResultModal";
 import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./context/AuthContext";
 import mascotImg from "./assets/pax_mascot-update-01-copy.png";
@@ -60,6 +61,8 @@ const App = () => {
   const [ctResult, setCtResult] = useState(null);
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  // Stripe checkout outcome: null | 'success' | 'pending' | 'cancel'
+  const [paymentResult, setPaymentResult] = useState(null);
 
   // Own Voice (pro): voice sample + intent → message in your voice
   const [voiceSample, setVoiceSample] = useState(
@@ -146,6 +149,50 @@ const App = () => {
     refreshUsage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, token]);
+
+  // Handle Stripe Checkout return: ?checkout=success&session_id=... unlocks
+  // the account; ?checkout=cancel just clears the params.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
+    if (!checkout) return;
+
+    const cleanUrl = () =>
+      window.history.replaceState({}, "", window.location.pathname);
+
+    if (checkout === "success" && token) {
+      const sessionId = params.get("session_id");
+      (async () => {
+        try {
+          let paid = false;
+          if (sessionId) {
+            const { data } = await axios.post(`${API_BASE_URL}/payments/verify`, null, {
+              params: { session_id: sessionId },
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            // Backend confirms via Stripe: payment_status === 'paid' / status 'complete'
+            paid = !!(data?.success || data?.has_unlimited_search_access);
+          }
+          setShowUpgradeModal(false);
+          await refreshUsage();
+          setError(null);
+          // "success" only when Stripe confirms payment; otherwise it's pending.
+          setPaymentResult(paid ? "success" : "pending");
+        } catch {
+          // Payment may still be confirmed by the Stripe webhook shortly after.
+          setPaymentResult("pending");
+        } finally {
+          cleanUrl();
+        }
+      })();
+    } else if (checkout === "cancel") {
+      setPaymentResult("cancel");
+      cleanUrl();
+    } else {
+      cleanUrl();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   // Free searches left: backend count for logged-in users, local count for guests.
   // null = unlimited / unknown → hide the hint.
@@ -1023,6 +1070,13 @@ const App = () => {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+      />
+
+      {/* Payment result — shown when returning from Stripe Checkout */}
+      <PaymentResultModal
+        isOpen={!!paymentResult}
+        status={paymentResult}
+        onClose={() => setPaymentResult(null)}
       />
     </div>
   );

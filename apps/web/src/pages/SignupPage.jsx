@@ -55,12 +55,15 @@ const SignupPage = () => {
         <div className="auth-field">
           <LuAtSign className="auth-field-icon" />
           <input type="text" placeholder="Username" value={username}
-            onChange={(e) => setUsername(e.target.value)} className="auth-input" />
+            onChange={(e) => setUsername(e.target.value)} required minLength={3}
+            className="auth-input" />
         </div>
         <div className="auth-field">
           <LuPhone className="auth-field-icon" />
           <input type="tel" placeholder="Mobile number" value={mobile}
-            onChange={(e) => setMobile(e.target.value)} className="auth-input" />
+            onChange={(e) => setMobile(e.target.value.replace(/[^\d+]/g, ''))}
+            required pattern="[+]?[0-9]{7,15}" title="Enter a valid mobile number (7–15 digits)"
+            className="auth-input" />
         </div>
         <div className="auth-field">
           <LuMail className="auth-field-icon" />

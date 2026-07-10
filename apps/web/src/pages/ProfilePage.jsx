@@ -4,9 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import {
   LuArrowLeft, LuPencil, LuCheck, LuLogOut, LuMail, LuUser,
   LuPhone, LuAtSign, LuSparkles, LuClock, LuCalendar, LuShieldCheck,
+  LuCrown,
 } from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ThemeToggle';
+import UpgradeModal from '../components/UpgradeModal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 
@@ -25,6 +27,8 @@ const ProfilePage = () => {
 
   // New feature: usage stats pulled from history
   const [stats, setStats] = useState({ total: 0, thisWeek: 0 });
+  // Upgrade / change-plan modal
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   useEffect(() => {
     if (!token) { navigate('/login', { replace: true }); return; }
@@ -84,6 +88,12 @@ const ProfilePage = () => {
     ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : '—';
 
+  // Subscription plan label: paid plan name (capitalised) or "Free".
+  const isSubscribed = !!profile?.has_unlimited_search_access;
+  const planName = isSubscribed
+    ? (profile?.subscription_plan || 'Pro').replace(/^\w/, (c) => c.toUpperCase())
+    : 'Free';
+
   const fields = [
     { label: 'Full Name', key: 'name',     value: name,     setter: setName,     type: 'text', Icon: LuUser,   placeholder: 'Your full name' },
     { label: 'Username',  key: 'username', value: username, setter: setUsername, type: 'text', Icon: LuAtSign, placeholder: 'Username' },
@@ -134,9 +144,14 @@ const ProfilePage = () => {
               <p className="text-blue-100 text-sm mt-1 flex items-center justify-center sm:justify-start gap-1.5">
                 <LuMail className="w-3.5 h-3.5" /> {profile?.email || '—'}
               </p>
-              <span className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-md">
-                <LuShieldCheck className="w-3.5 h-3.5" /> Verified account
-              </span>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-3">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-md">
+                  <LuShieldCheck className="w-3.5 h-3.5" /> Verified account
+                </span>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md ${isSubscribed ? 'bg-amber-300/90 text-amber-900' : 'bg-white/20 text-white'}`}>
+                  <LuCrown className="w-3.5 h-3.5" /> {planName} plan
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -209,6 +224,29 @@ const ProfilePage = () => {
                   <p className="text-sm font-medium text-gray-400 truncate">{profile.email}</p>
                 </div>
               </div>
+
+              {/* Plan (read-only) + upgrade/change action */}
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isSubscribed ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'}`}>
+                  <LuCrown className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                  <label className="text-[10px] text-blue-400 font-semibold uppercase tracking-wider">Plan</label>
+                  <p className="text-sm font-semibold text-gray-800 truncate">
+                    {planName} plan
+                    {isSubscribed && profile.subscription_status
+                      ? ` · ${profile.subscription_status}`
+                      : ''}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowUpgrade(true)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 transition-colors px-3 py-1.5 rounded-lg flex-shrink-0"
+                >
+                  <LuSparkles className="w-3.5 h-3.5" />
+                  {isSubscribed ? 'Change plan' : 'Upgrade'}
+                </button>
+              </div>
             </div>
 
             {error   && <p className="text-red-500 text-xs text-center bg-red-50 border border-red-100 rounded-xl px-3 py-2 mt-4">{error}</p>}
@@ -230,6 +268,21 @@ const ProfilePage = () => {
           </div>
         )}
       </div>
+
+      {/* Upgrade / change-plan modal */}
+      <UpgradeModal
+        isOpen={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        currentPlan={isSubscribed ? (profile?.subscription_plan || 'medium') : null}
+        onChanged={(data) =>
+          setProfile((p) => ({
+            ...p,
+            subscription_plan: data.subscription_plan,
+            subscription_status: data.subscription_status || p.subscription_status,
+            has_unlimited_search_access: true,
+          }))
+        }
+      />
     </div>
   );
 };

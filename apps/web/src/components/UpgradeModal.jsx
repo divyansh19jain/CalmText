@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LuCheck, LuX, LuSparkles, LuCrown, LuRocket } from 'react-icons/lu';
+import axios from 'axios';
+import { LuCheck, LuX, LuSparkles, LuCrown, LuRocket, LuLoaderCircle } from 'react-icons/lu';
+import { useAuth } from '../context/AuthContext';
 
-// UI-only pricing tiers. Edit prices/features here as needed.
-// `payments` are not wired yet — selecting a plan just unlocks the demo locally.
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
+
+// Pricing tiers. `id` must match a plan key in the backend (payments.py PLANS).
 const PLANS = [
   {
     id: 'medium',
@@ -37,10 +41,76 @@ const PLANS = [
   },
 ];
 
-const UpgradeModal = ({ isOpen, onClose }) => {
-  // Payments aren't wired up yet — picking a plan just shows a notice.
+// Ordering used to decide "Upgrade" vs "Switch" wording.
+const PLAN_ORDER = ['medium', 'pro', 'premium'];
+
+// isOpen/onClose control visibility. When `currentPlan` is set the modal acts
+// as a "manage plan" screen (switch the existing subscription in place);
+// otherwise it's the first-time upgrade (Stripe Checkout redirect).
+const UpgradeModal = ({ isOpen, onClose, currentPlan = null, onChanged }) => {
+  const { token, isAuthenticated } = useAuth();
   const [notice, setNotice] = useState('');
+  const [loadingPlan, setLoadingPlan] = useState(null);
   if (!isOpen) return null;
+
+  const isManaging = !!currentPlan;
+
+  // Start Stripe Checkout: ask the backend for a hosted checkout URL, then
+  // redirect the browser to Stripe. On success Stripe returns to the app with
+  // ?checkout=success&session_id=... which App.jsx verifies.
+  const handleChoose = async (plan) => {
+    setNotice('');
+    if (!isAuthenticated) {
+      setNotice('Please sign in first to subscribe.');
+      return;
+    }
+    setLoadingPlan(plan.id);
+    try {
+      const { data } = await axios.post(
+        `${API_BASE_URL}/payments/create-checkout-session`,
+        { plan: plan.id },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (data?.checkout_url) {
+        window.location.href = data.checkout_url;
+        return;
+      }
+      setNotice('Could not start checkout. Please try again.');
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setNotice(detail || 'Could not start checkout. Please try again.');
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  // Switch an already-active subscription to another plan (no redirect).
+  const handleChangePlan = async (plan) => {
+    setNotice('');
+    setLoadingPlan(plan.id);
+    try {
+      const { data } = await axios.post(
+        `${API_BASE_URL}/payments/change-plan`,
+        { plan: plan.id },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setNotice(`You're now on the ${plan.name} plan.`);
+      if (onChanged) onChanged(data);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setNotice(detail || 'Could not change your plan. Please try again.');
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  // Wording for the CTA on each plan card.
+  const ctaLabel = (plan) => {
+    if (!isManaging) return `Choose ${plan.name}`;
+    if (plan.id === currentPlan) return 'Current plan';
+    const up = PLAN_ORDER.indexOf(plan.id) > PLAN_ORDER.indexOf(currentPlan);
+    return `${up ? 'Upgrade' : 'Switch'} to ${plan.name}`;
+  };
 
   return (
     <motion.div
@@ -69,13 +139,15 @@ const UpgradeModal = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="text-center mb-6">
           <span className="text-xs font-bold uppercase tracking-widest text-blue-500">
-            You've used your 3 free Pax takes
+            {isManaging ? 'Manage your subscription' : "You've used your 3 free Pax takes"}
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight mt-1">
-            Upgrade to keep going
+            {isManaging ? 'Change your plan' : 'Upgrade to keep going'}
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Choose a plan to continue using Pax without limits.
+            {isManaging
+              ? 'Switch anytime — you’ll only be charged the prorated difference.'
+              : 'Choose a plan to continue using Pax without limits.'}
           </p>
         </div>
 
@@ -118,16 +190,37 @@ const UpgradeModal = ({ isOpen, onClose }) => {
                   ))}
                 </ul>
 
-                <button
-                  onClick={() => setNotice(`${plan.name} plan — payments are coming soon. You can't subscribe just yet.`)}
-                  className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors ${
-                    plan.highlight
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                  }`}
-                >
-                  Choose {plan.name}
-                </button>
+                {(() => {
+                  const isCurrent = isManaging && plan.id === currentPlan;
+                  return (
+                    <button
+                      onClick={() =>
+                        isManaging ? handleChangePlan(plan) : handleChoose(plan)
+                      }
+                      disabled={loadingPlan !== null || isCurrent}
+                      className={`w-full py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed ${
+                        isCurrent
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : plan.highlight
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                      }`}
+                    >
+                      {loadingPlan === plan.id ? (
+                        <>
+                          <LuLoaderCircle className="w-4 h-4 animate-spin" />
+                          {isManaging ? 'Updating…' : 'Redirecting…'}
+                        </>
+                      ) : isCurrent ? (
+                        <>
+                          <LuCheck className="w-4 h-4" /> Current plan
+                        </>
+                      ) : (
+                        ctaLabel(plan)
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
             );
           })}
@@ -142,7 +235,7 @@ const UpgradeModal = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         <p className="text-center text-xs text-gray-400 mt-4">
-          Plans are placeholders — payments are not active yet.
+          Secure checkout powered by Stripe. Cancel anytime.
         </p>
       </motion.div>
     </motion.div>
