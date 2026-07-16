@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import time
 import asyncio
-from app.schemas.pax import PaxAnalyzeRequest, PaxAnalyzeResponse, PaxFeedbackRequest, PaxFeedbackResponse, ClearTextRequest, ClearTextResponse, OwnVoiceRequest, OwnVoiceResponse
-from app.prompts.pax_variants import CLEARTEXT_V1_PROMPT, OWNVOICE_V1_PROMPT
+from app.schemas.pax import PaxAnalyzeRequest, PaxAnalyzeResponse, PaxFeedbackRequest, PaxFeedbackResponse, ClearTextRequest, ClearTextResponse, OwnVoiceRequest, OwnVoiceResponse, PaxCoachRequest, PaxCoachResponse
+from app.prompts.pax_variants import CLEARTEXT_V1_PROMPT, OWNVOICE_V1_PROMPT, PAX_COACH_V1_PROMPT
 from app.services.pax_service import PaxService
 from app.services.feedback_service import FeedbackService
 from app.core.dependencies import get_llm_client, get_claude_client, get_optional_user, get_current_user, apply_user_model_tier
@@ -246,6 +246,48 @@ async def write_own_voice(
 
     await _increment_search_count(db, current_user)
     return OwnVoiceResponse(message=result, latency_ms=latency_ms)
+
+@router.post("/coach", response_model=PaxCoachResponse)
+async def coach_pax(
+    request: PaxCoachRequest,
+    llm_client: LLMClient = Depends(get_llm_client),
+    current_user=Depends(get_optional_user),
+):
+    """PAX "stuck" flow: judge a draft against the user's chosen goal
+    (understanding / peace / respect) without rewriting it.
+
+    Not counted against the search limit — it is a sub-step of an analysis
+    the user already spent a search on.
+    """
+    apply_user_model_tier(llm_client, current_user)
+    start = time.time()
+
+    user_text = f"GOAL: {request.goal}\n\nDRAFT MESSAGE:\n{request.text}"
+    if request.answers:
+        reflections = "\n".join(f"- {a.strip()}" for a in request.answers if a and a.strip())
+        if reflections:
+            user_text += f"\n\nREFLECTIONS:\n{reflections}"
+
+    try:
+        feedback, _ = await llm_client.generate_completion(PAX_COACH_V1_PROMPT, user_text)
+    except Exception as e:
+        error_str = str(e).lower()
+        if 'insufficient_quota' in error_str or '429' in error_str:
+            await _notify_admin_quota_exhausted(current_user)
+            raise HTTPException(status_code=429, detail="Something went wrong")
+        raise
+
+    # The prompt puts a "RISK: HIGH|LOW" marker on the first line — strip it
+    # out and surface it as a boolean so the frontend can drop humor for
+    # distressed users and point them to a real human.
+    high_risk = False
+    lines = feedback.strip().splitlines()
+    if lines and lines[0].strip().upper().startswith("RISK:"):
+        high_risk = "HIGH" in lines[0].upper()
+        feedback = "\n".join(lines[1:])
+
+    latency_ms = int((time.time() - start) * 1000)
+    return PaxCoachResponse(feedback=feedback.strip(), high_risk=high_risk, latency_ms=latency_ms)
 
 @router.post("/feedback", response_model=PaxFeedbackResponse)
 async def submit_feedback(request: PaxFeedbackRequest):

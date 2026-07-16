@@ -31,6 +31,20 @@ class OwnVoiceResponse(BaseModel):
     message: str
     latency_ms: int
 
+class PaxCoachRequest(BaseModel):
+    text: str = Field(..., description="The draft message the user is stuck on")
+    goal: Literal["understanding", "peace", "respect"] = Field(
+        ..., description="The communication outcome the user chose"
+    )
+    answers: Optional[list[str]] = Field(
+        None, description="The user's answers to the goal's reflection questions"
+    )
+
+class PaxCoachResponse(BaseModel):
+    feedback: str
+    high_risk: bool = False
+    latency_ms: int
+
 class PaxFeedbackRequest(BaseModel):
     text: str
     pax: str
