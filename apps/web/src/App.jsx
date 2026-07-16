@@ -739,7 +739,7 @@ const App = () => {
                         Hi, I'm Pax
                       </h1>
                       <p className="text-sm text-blue-400 font-medium mt-1">
-                        Your emotional clarity companion
+                        🐾 Think before you send
                       </p>
                     </div>
                   </div>
