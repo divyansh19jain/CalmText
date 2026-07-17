@@ -763,40 +763,6 @@ const App = () => {
                     ))}
                   </div>
 
-                  {/* Mode context pill */}
-                  <div className="flex items-center justify-center">
-                    <div
-                      className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold"
-                      style={{
-                        background: "rgba(37,99,235,0.08)",
-                        color: "#2563EB",
-                        border: "1px solid rgba(37,99,235,0.14)",
-                      }}
-                    >
-                      {mode === "input" ? (
-                        <>
-                          <LuMessageSquare className="w-3.5 h-3.5" /> Decode
-                          messages you received
-                        </>
-                      ) : mode === "output" ? (
-                        <>
-                          <LuSparkles className="w-3.5 h-3.5" /> Refine what you
-                          want to say
-                        </>
-                      ) : mode === "voice" ? (
-                        <>
-                          <LuFeather className="w-3.5 h-3.5" /> Write it in your
-                          own voice
-                        </>
-                      ) : (
-                        <>
-                          <LuSearch className="w-3.5 h-3.5" /> Get clarity on
-                          any message
-                        </>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Inputs */}
                   {mode === "voice" ? (
                     <div className="flex flex-col gap-3">
