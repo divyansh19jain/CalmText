@@ -41,6 +41,7 @@ const trialKeyFor = (user) => `${TRIAL_KEY_PREFIX}_${user?.id ?? "guest"}`;
 
 const MODES = [
   { value: "input", label: "I Received This", Icon: LuMessageSquare },
+  { value: "output", label: "I Want To Say This", Icon: LuSparkles },
   { value: "cleartext", label: "ClearText", Icon: LuAlignLeft },
   { value: "voice", label: "Own Voice", Icon: LuFeather, pro: true },
 ];
