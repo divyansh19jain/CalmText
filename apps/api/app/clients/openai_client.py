@@ -16,17 +16,28 @@ class OpenAIClient(LLMClient):
             self._model_name = model_name
 
     async def generate_completion(self, system_prompt: str, user_text: str) -> Tuple[str, int]:
-        response = await self.client.chat.completions.create(
-            model=self._model_name,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_text}
-            ],
-            temperature=0.65,
-            max_tokens=500,
-            # max_completion_tokens=500,
-        )
-        content = response.choices[0].message.content.strip()
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_text}
+        ]
+        if self._model_name.startswith("gpt-5"):
+            # GPT-5 family rejects `max_tokens` and non-default temperature.
+            # It also spends tokens on internal reasoning, so give it headroom
+            # and keep reasoning minimal for fast, short replies.
+            response = await self.client.chat.completions.create(
+                model=self._model_name,
+                messages=messages,
+                max_completion_tokens=2000,
+                reasoning_effort="minimal",
+            )
+        else:
+            response = await self.client.chat.completions.create(
+                model=self._model_name,
+                messages=messages,
+                temperature=0.65,
+                max_tokens=500,
+            )
+        content = (response.choices[0].message.content or "").strip()
         tokens = response.usage.total_tokens if response.usage else 0
         return content, tokens
 
