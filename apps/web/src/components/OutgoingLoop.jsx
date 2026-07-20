@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { LuSend, LuPencil, LuTrash2, LuPawPrint, LuFeather, LuCoffee } from 'react-icons/lu';
+import { LuSend, LuPencil, LuTrash2, LuPawPrint, LuFeather, LuCoffee, LuBrain } from 'react-icons/lu';
 import mascotImg from '../assets/single-logo.png';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
@@ -188,12 +188,18 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
           {result?.pax}
         </div>
       </div>
-      {/* Subtext underneath */}
+      {/* Subtext underneath — NOT Pax: your own brain after the pause, so no dog mascot */}
       {result?.subtext && (
         <div className="reflection-box flex flex-col gap-4">
           <div className="flex items-center gap-3">
-            <MascotAvatar />
-            <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(37,99,235,0.08)' }}>
+              <LuBrain className="text-blue-500" style={{ width: '18px', height: '18px' }} />
+            </div>
+            <div className="flex flex-col">
+              <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
+              <span className="text-[11px] text-gray-400 font-serif italic">Your brain, back online — after the pause</span>
+            </div>
           </div>
           <div className="text-sm font-serif text-gray-600 whitespace-pre-wrap leading-relaxed">
             {result.subtext.replace(/^SubText\s*\n?/, '').trim()}

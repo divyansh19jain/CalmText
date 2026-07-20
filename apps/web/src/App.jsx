@@ -15,6 +15,7 @@ import {
   LuFeather,
   LuLock,
   LuPawPrint,
+  LuReply,
 } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import ResultSection from "./components/ResultSection";
@@ -41,9 +42,11 @@ const trialKeyFor = (user) => `${TRIAL_KEY_PREFIX}_${user?.id ?? "guest"}`;
 
 const MODES = [
   { value: "input", label: "I Received This", Icon: LuMessageSquare },
-  { value: "output", label: "I Want To Say This", Icon: LuSparkles },
-  { value: "cleartext", label: "ClearText", Icon: LuAlignLeft },
-  { value: "voice", label: "Own Voice", Icon: LuFeather, pro: true },
+  { value: "output", label: "Reply", Icon: LuReply },
+  // Hidden for now per client — backend and components stay for a later release.
+  // Own Voice is still reachable via Pax's hand-off after the reply loop.
+  // { value: "cleartext", label: "ClearText", Icon: LuAlignLeft },
+  // { value: "voice", label: "Own Voice", Icon: LuFeather, pro: true },
 ];
 
 const App = () => {
@@ -737,10 +740,10 @@ const App = () => {
                     </div>
                     <div className="text-center">
                       <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">
-                        Hi, I'm Pax
+                        Hi, I am Pax.
                       </h1>
                       <p className="text-sm text-blue-400 font-medium mt-1">
-                        🐾 Think before you send
+                        🐾 Think before you text.
                       </p>
                     </div>
                   </div>

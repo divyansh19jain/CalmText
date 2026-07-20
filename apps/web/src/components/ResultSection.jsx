@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LuZap } from 'react-icons/lu';
+import { LuZap, LuBrain } from 'react-icons/lu';
 import mascotImg from '../assets/single-logo.png';
 import OutgoingLoop from './OutgoingLoop';
 
@@ -17,6 +17,15 @@ const MascotAvatar = () => {
     </div>
   );
 };
+
+// SubText is NOT Pax — it's your own brain coming back online after the pause.
+// So it gets a neutral human icon, never the dog mascot.
+const BrainAvatar = () => (
+  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+    style={{ background: 'rgba(37,99,235,0.08)' }}>
+    <LuBrain className="text-blue-500" style={{ width: '18px', height: '18px' }} />
+  </div>
+);
 
 const ResultSection = ({ results, originalText, onNewAnalysis, onUseOwnVoice, token, onHistoryRefresh, conversationId }) => {
   return (
@@ -50,8 +59,11 @@ const ResultSection = ({ results, originalText, onNewAnalysis, onUseOwnVoice, to
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}
           className="reflection-box flex flex-col gap-4">
           <div className="flex items-center gap-3">
-            <MascotAvatar />
-            <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
+            <BrainAvatar />
+            <div className="flex flex-col">
+              <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
+              <span className="text-[11px] text-gray-400 font-serif italic">Your brain, back online — after the pause</span>
+            </div>
           </div>
           <div className="text-sm font-serif text-gray-600 whitespace-pre-wrap leading-relaxed">
             {results.subtext.replace(/^SubText\s*\n?/, '').trim()}

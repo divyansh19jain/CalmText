@@ -76,7 +76,7 @@ const History = ({ onClose, onReplay }) => {
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-1.5 flex-1 min-w-0">
                 <span className="text-[10px] uppercase tracking-widest text-blue-500 font-bold">
-                  {item.mode === 'input' ? 'I Received This' : 'I Want To Say This'}
+                  {item.mode === 'input' ? 'I Received This' : 'Reply'}
                 </span>
                 <p className="text-sm font-semibold text-gray-900 truncate">{item.text}</p>
                 <p className="text-xs text-gray-500 line-clamp-1 font-serif">{item.pax}</p>
