@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { LuSend, LuPencil, LuTrash2, LuPawPrint, LuFeather, LuCoffee, LuBrain } from 'react-icons/lu';
+import { LuSend, LuPencil, LuTrash2, LuPawPrint, LuCoffee, LuBrain } from 'react-icons/lu';
 import mascotImg from '../assets/single-logo.png';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
@@ -69,15 +69,15 @@ const PAX_RESETS = [
 ];
 
 // Implements the client's "PAX Outgoing Message Loop" + "stuck" flow:
-// draft -> outgoing pause (PAX 2 + Subtext) -> Send As Is | Revise | Delete
-//   if Revise -> edit -> outgoing pause ONE final time -> Send | I'm stuck | Don't Send
+// draft -> gut check (PAXism only if heated) -> Send As Is | Revise | Delete
+//   if Revise -> edit -> gut check ONE final time -> Send | I'm stuck | Don't Send
 //   if stuck  -> pick a goal (Understanding / Peace / Respect)
 //             -> answer 3 reflection questions -> edit or send as is
 //             -> if editing, PAX judges the new draft against the goal (no rewrites)
 //             -> after 2 coached edits, PAX encourages a real pause
 //                (take a break | one-line PAX reset), unless high-risk —
 //                then empathy only and a nudge toward a real human.
-const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }) => {
+const OutgoingLoop = ({ token, onHistoryRefresh, conversationId }) => {
   // stages: draft | pause | revise | pauseFinal | goalSelect | goalReflect |
   //         coachEdit | coachPause | breakOffer | takeBreak | paxReset | sent | deleted
   const [stage, setStage] = useState('draft');
@@ -175,19 +175,37 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
     setCoachTries(0);
   };
 
-  // PAX 2 + Subtext block — shown during both outgoing pauses
+  // Reply gut check block — shown during both outgoing pauses (client spec):
+  // the gut check first; only when the writer is heated, a calming PAXism
+  // underneath (de-escalation from emotion to calming thought). SubText
+  // follows with how the draft may land.
   const PauseOutput = () => (
     <div className="flex flex-col gap-4">
-      {/* PAX 2 first (the PAXism — primary interruption) */}
+      {/* Gut check first — a dog's instinctive read of the writer */}
       <div className="reflection-box flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <MascotAvatar />
-          <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">Pax's Take:</span>
+          <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">Pax's gut check:</span>
         </div>
         <div className="text-base font-serif text-gray-800 whitespace-pre-wrap leading-relaxed">
           {result?.pax}
         </div>
       </div>
+      {/* PAXism underneath — only when the gut check ran hot */}
+      {result?.paxism && (
+        <div className="reflection-box flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <MascotAvatar />
+            <div className="flex flex-col">
+              <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">Pax calms:</span>
+              <span className="text-[11px] text-gray-400 font-serif italic">A slow breath before the send button</span>
+            </div>
+          </div>
+          <div className="text-base font-serif text-gray-800 whitespace-pre-wrap leading-relaxed">
+            {result.paxism}
+          </div>
+        </div>
+      )}
       {/* Subtext underneath — NOT Pax: your own brain after the pause, so no dog mascot */}
       {result?.subtext && (
         <div className="reflection-box flex flex-col gap-4">
@@ -538,7 +556,8 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
           </motion.div>
         )}
 
-        {/* STAGE: End of loop — Pax gently encourages a pause and hands off to Own Voice */}
+        {/* STAGE: End of loop — the words were the user's own; Pax just
+            encourages a real pause. Pax messaging never writes anywhere. */}
         {stage === 'sent' && (
           <motion.div key="sent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="flex flex-col gap-4 py-2">
@@ -549,19 +568,10 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId, onUseOwnVoice }
             </div>
             <div className="reflection-box">
               <p className="text-sm font-serif text-gray-700 leading-relaxed text-center">
-                🐾 “Woof… my nose says it’s time for a pause. Leave this trail here and take
-                about a 30-second sniff break. If you still want to reply when you get back,
-                I’ll help you say it in your own voice.”
+                🐾 “Woof… your words, your call — and you paused before they left the yard.
+                Leave this trail here and take about a 30-second sniff break.”
               </p>
             </div>
-            {onUseOwnVoice && (
-              <button
-                onClick={onUseOwnVoice}
-                className="flex items-center justify-center gap-2 py-3 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-colors"
-              >
-                <LuFeather className="w-4 h-4" /> Say it in my own voice
-              </button>
-            )}
             <button onClick={restart} className="text-xs font-semibold text-blue-500 hover:text-blue-700 transition-colors">
               Write another reply
             </button>

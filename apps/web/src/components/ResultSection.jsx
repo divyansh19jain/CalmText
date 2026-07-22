@@ -27,7 +27,8 @@ const BrainAvatar = () => (
   </div>
 );
 
-const ResultSection = ({ results, originalText, onNewAnalysis, onUseOwnVoice, token, onHistoryRefresh, conversationId }) => {
+const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHistoryRefresh, conversationId }) => {
+  const isReply = mode === 'output';
   return (
     <div className="flex flex-col gap-5">
 
@@ -35,24 +36,44 @@ const ResultSection = ({ results, originalText, onNewAnalysis, onUseOwnVoice, to
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
         className="glass-card">
         <label className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-3 block">
-          Original Message
+          {isReply ? 'Your Reply' : 'Original Message'}
         </label>
         <p className="text-base font-semibold text-gray-900 leading-relaxed">
           {originalText}
         </p>
       </motion.div>
 
-      {/* Pax box */}
+      {/* Pax box — for replies this is the gut check (client spec) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.10 }}
         className="reflection-box flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <MascotAvatar />
-          <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">Pax's Take:</span>
+          <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">
+            {isReply ? "Pax's gut check:" : "Pax's Take:"}
+          </span>
         </div>
         <div className="text-base font-serif text-gray-800 whitespace-pre-wrap leading-relaxed">
           {results.pax}
         </div>
       </motion.div>
+
+      {/* PAXism — only when a reply's gut check ran hot: de-escalation
+          from emotion to calming thought */}
+      {results.paxism && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}
+          className="reflection-box flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <MascotAvatar />
+            <div className="flex flex-col">
+              <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">Pax calms:</span>
+              <span className="text-[11px] text-gray-400 font-serif italic">A slow breath before the send button</span>
+            </div>
+          </div>
+          <div className="text-base font-serif text-gray-800 whitespace-pre-wrap leading-relaxed">
+            {results.paxism}
+          </div>
+        </motion.div>
+      )}
 
       {/* SubText box */}
       {results.subtext && (
@@ -71,8 +92,8 @@ const ResultSection = ({ results, originalText, onNewAnalysis, onUseOwnVoice, to
         </motion.div>
       )}
 
-      {/* Outgoing Message Loop — draft a reply, pause with PAX 2 + Subtext, decide */}
-      <OutgoingLoop token={token} onHistoryRefresh={onHistoryRefresh} conversationId={conversationId} onUseOwnVoice={onUseOwnVoice} />
+      {/* Outgoing Message Loop — draft a reply, gut check with Pax, decide */}
+      <OutgoingLoop token={token} onHistoryRefresh={onHistoryRefresh} conversationId={conversationId} />
 
       {/* CTA */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.40 }}>
