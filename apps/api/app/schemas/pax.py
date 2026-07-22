@@ -10,6 +10,10 @@ class PaxAnalyzeRequest(BaseModel):
 class PaxAnalyzeResponse(BaseModel):
     pax: str
     subtext: str = ""
+    # Reply gut check (mode="output"): "calm" or "heated", and the calming
+    # PAXism that follows a heated gut check. Empty for mode="input".
+    gut: str = ""
+    paxism: str = ""
     prompt_version: str
     model: str
     latency_ms: int

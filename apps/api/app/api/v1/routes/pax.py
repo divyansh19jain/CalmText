@@ -76,6 +76,12 @@ async def _save_history(db: AsyncSession, user, result: PaxAnalyzeResponse, requ
     if user is None:
         return
 
+    # Reply gut checks: keep the calming PAXism with the gut check in the
+    # stored take, so history/thread views show the full moment.
+    pax_text = result.pax
+    if result.paxism:
+        pax_text = f"{pax_text}\n\n{result.paxism}"
+
     # Check if this message already exists for this user (case-insensitive match)
     stmt = select(SearchHistory).where(
         SearchHistory.user_id == user.id,
@@ -87,7 +93,7 @@ async def _save_history(db: AsyncSession, user, result: PaxAnalyzeResponse, requ
     if existing_entry:
         # Update existing entry with new analysis
         existing_entry.mode = request.mode
-        existing_entry.pax = result.pax
+        existing_entry.pax = pax_text
         existing_entry.subtext = result.subtext
         if request.conversation_id:
             existing_entry.conversation_id = request.conversation_id
@@ -99,7 +105,7 @@ async def _save_history(db: AsyncSession, user, result: PaxAnalyzeResponse, requ
             text=request.text,
             mode=request.mode,
             conversation_id=request.conversation_id,
-            pax=result.pax,
+            pax=pax_text,
             subtext=result.subtext,
         )
         db.add(entry)
