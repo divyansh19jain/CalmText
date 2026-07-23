@@ -90,7 +90,10 @@ const preprocessScreenshot = (file, region) =>
       }
       ctx.putImageData(imgData, 0, 0);
       canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error("blob failed"))),
+        (blob) =>
+          blob
+            ? resolve({ blob, width: w, height: h })
+            : reject(new Error("blob failed")),
         "image/png",
       );
     };
@@ -101,46 +104,113 @@ const preprocessScreenshot = (file, region) =>
     img.src = url;
   });
 
-// Reduce raw OCR to just the conversation text. Chat screenshots include a
-// lot of UI: the contact header, timestamps, read-receipt ticks, date
-// separators, the "type a message" bar, and garbled bits from icons. We strip
-// timestamps/known UI text, then keep only lines that actually read like real
-// sentences (mostly dictionary-shaped words) so noise/gibberish is dropped.
-const cleanOcrText = (raw) => {
-  const TIME = /\d{1,2}[:.]\d{2}\s*(?:[ap]\.?\s?m\.?|[ap])?/gi;
-  const DATE_SEP =
-    /^(today|yesterday|mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})$/i;
+// --- OCR text helpers ---------------------------------------------------
+// Chat screenshots carry a lot of UI: contact header, timestamps, ticks, date
+// separators, the "type a message" bar, "Forwarded" tags, and garbled bits
+// from icons. These helpers strip that noise and keep only real message text.
+const DATE_SEP_RE =
+  /^(today|yesterday|mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})$/i;
+const UI_NOISE_RE =
+  /^(forwarded|you deleted this message|this message was deleted|missed (voice|video) call|online|typing\.*)$/i;
 
-  // A line "reads like a message" when most of its tokens are real-ish words
-  // (letters only after trimming punctuation, and containing a vowel).
-  const looksLikeMessage = (line) => {
-    const tokens = line.split(/\s+/).filter(Boolean);
-    if (!tokens.length) return false;
-    const good = tokens.filter((t) => {
-      const w = t.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "");
-      return /^[A-Za-z][a-z]{1,14}$/.test(w) && /[aeiou]/i.test(w);
-    }).length;
-    return good >= 1 && good / tokens.length >= 0.6;
-  };
+// Remove timestamps (anywhere), the WhatsApp input bar, and extra spaces.
+const stripLineNoise = (line) =>
+  (line || "")
+    .replace(/\d{1,2}[:.]\d{2}\s*(?:[ap]\.?\s?m\.?|[ap])?/gi, " ")
+    .replace(/type a message/gi, " ")
+    .replace(/[ \t]+/g, " ")
+    .trim();
 
-  return (raw || "")
+// A line "reads like a message" when most of its tokens are real-ish words
+// (letters only after trimming punctuation, and containing a vowel).
+const looksLikeMessage = (line) => {
+  const tokens = line.split(/\s+/).filter(Boolean);
+  if (!tokens.length) return false;
+  const good = tokens.filter((t) => {
+    const w = t.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "");
+    return /^[A-Za-z][a-z]{1,14}$/.test(w) && /[aeiou]/i.test(w);
+  }).length;
+  return good >= 1 && good / tokens.length >= 0.6;
+};
+
+const isRealMessageLine = (line) =>
+  !!line && !DATE_SEP_RE.test(line) && !UI_NOISE_RE.test(line) && looksLikeMessage(line);
+
+// Plain fallback: cleaned message text with no speaker labels.
+const cleanOcrText = (raw) =>
+  (raw || "")
     .replace(/\r/g, "")
     .split("\n")
-    .map((line) =>
-      line
-        .replace(TIME, " ") // remove timestamps anywhere on the line
-        .replace(/type a message/gi, " ") // WhatsApp input bar
-        .replace(/[ \t]+/g, " ")
-        .trim(),
-    )
-    .filter((line) => {
-      if (!line) return false;
-      if (DATE_SEP.test(line)) return false;
-      return looksLikeMessage(line);
-    })
+    .map(stripLineNoise)
+    .filter(isRealMessageLine)
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+
+// Pull the other person's name from the header lines at the top of a chat.
+const detectContactName = (headerLines) => {
+  let best = "";
+  headerLines.forEach(({ raw }) => {
+    const name = raw
+      .split(/\s+/)
+      .filter((w) => /^[A-Za-z][A-Za-z.'’-]{1,}$/.test(w) && /[aeiou]/i.test(w))
+      .slice(0, 3)
+      .join(" ");
+    if (name.length > best.length) best = name;
+  });
+  return best || "Them";
+};
+
+// Conversation mode: use each line's position to label it. In WhatsApp the
+// messages you sent hug the right ("Me"); the other person's hug the left
+// (their name, read from the header). Returns a labelled transcript, or null
+// if the layout data isn't usable (caller falls back to cleanOcrText).
+const buildConversation = (data, width, height) => {
+  const blocks = data?.blocks;
+  if (!blocks || !width || !height) return null;
+
+  const all = [];
+  blocks.forEach((b) =>
+    (b.paragraphs || []).forEach((p) =>
+      (p.lines || []).forEach((l) => {
+        const raw = (l.text || "").replace(/\s+/g, " ").trim();
+        if (raw && l.bbox) all.push({ raw, ...l.bbox });
+      }),
+    ),
+  );
+  if (!all.length) return null;
+
+  // Name comes from the header strip at the very top. Message lines are
+  // everything below it; the input bar / icons are removed later by the text
+  // filters (stripLineNoise drops "type a message", gibberish gets dropped).
+  const headerCut = height * 0.09;
+  const name = detectContactName(all.filter((l) => l.y1 <= headerCut));
+  const body = all.filter((l) => l.y0 > headerCut);
+  if (!body.length) return null;
+
+  const heights = body.map((l) => l.y1 - l.y0).sort((a, b) => a - b);
+  const lineH = heights[Math.floor(heights.length / 2)] || 20;
+
+  const msgs = [];
+  body.forEach((l) => {
+    const text = stripLineNoise(l.raw);
+    if (!isRealMessageLine(text)) return;
+    const side = (l.x0 + l.x1) / 2 / width > 0.52 ? "me" : "them";
+    const prev = msgs[msgs.length - 1];
+    // Same speaker + tight vertical gap = a wrapped line of the SAME bubble.
+    // A larger gap means a new bubble, so it starts a new labelled message.
+    if (prev && prev.side === side && l.y0 - prev.y1 <= lineH * 0.8) {
+      prev.text += " " + text;
+      prev.y1 = l.y1;
+    } else {
+      msgs.push({ side, text, y1: l.y1 });
+    }
+  });
+  if (!msgs.length) return null;
+
+  return msgs
+    .map((m) => `${m.side === "me" ? "Me" : name}: ${m.text}`)
+    .join("\n");
 };
 
 const App = () => {
@@ -512,9 +582,28 @@ const App = () => {
     setOcrLoading(true);
     try {
       // Pre-process for accuracy (falls back to the raw file if it fails)
-      const image = await preprocessScreenshot(file, region).catch(() => file);
-      const { data } = await Tesseract.recognize(image, "eng");
-      const text = cleanOcrText(data?.text);
+      let processed = null;
+      try {
+        processed = await preprocessScreenshot(file, region);
+      } catch {
+        processed = null;
+      }
+      const image = processed ? processed.blob : file;
+
+      // Recognize with layout data (blocks) so we can tell who said what
+      const worker = await Tesseract.createWorker("eng");
+      let data;
+      try {
+        ({ data } = await worker.recognize(image, {}, { blocks: true, text: true }));
+      } finally {
+        await worker.terminate();
+      }
+
+      // Conversation mode (labelled by side) when layout is usable; else plain
+      const convo = processed
+        ? buildConversation(data, processed.width, processed.height)
+        : null;
+      const text = convo || cleanOcrText(data?.text);
       if (text) {
         setInputText((prev) => (prev.trim() ? `${prev}\n${text}` : text));
       } else {
