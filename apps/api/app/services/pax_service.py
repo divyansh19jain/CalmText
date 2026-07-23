@@ -1,4 +1,5 @@
 import time
+import re
 import asyncio
 from app.schemas.pax import PaxAnalyzeRequest, PaxAnalyzeResponse
 from app.services.prompt_service import PromptService
@@ -15,8 +16,15 @@ class PaxService:
         if request.mode != "input":
             return await self._gut_check(request, start_time)
 
-        version, pax_prompt = PromptService.get_prompt("pax_v4_input")
-        _, subtext_prompt = PromptService.get_prompt("subtext_v1_input")
+        # A pasted screenshot transcript (lines like "Me:" / "Divyansh Jain:")
+        # gets the conversation-aware prompts; a single message keeps the
+        # original single-message analysis.
+        if self._is_conversation(request.text):
+            version, pax_prompt = PromptService.get_prompt("pax_v4_conversation")
+            _, subtext_prompt = PromptService.get_prompt("subtext_v1_conversation")
+        else:
+            version, pax_prompt = PromptService.get_prompt("pax_v4_input")
+            _, subtext_prompt = PromptService.get_prompt("subtext_v1_input")
 
         try:
             logger.info(f"Analyzing text for mode: {request.mode} using version: {version}")
@@ -96,6 +104,21 @@ class PaxService:
                 tokens_used=0,
                 error=str(e),
             )
+
+    # A labelled line looks like "Me: ..." or "Divyansh Jain: ..." — a short
+    # speaker label (letters, spaces, simple punctuation) followed by ": text".
+    _LABEL_RE = re.compile(r"^\s*[A-Za-z][\w .'’-]{0,30}:\s+\S", re.MULTILINE)
+    _ME_RE = re.compile(r"^\s*me:\s", re.IGNORECASE | re.MULTILINE)
+
+    @classmethod
+    def _is_conversation(cls, text: str) -> bool:
+        """True when the text is a pasted chat transcript: at least two
+        speaker-labelled lines, including one from "Me". Otherwise it's a
+        single message and uses the standard analysis."""
+        if not text:
+            return False
+        labelled = len(cls._LABEL_RE.findall(text))
+        return labelled >= 2 and bool(cls._ME_RE.search(text))
 
     @staticmethod
     def _parse_gut_check(raw: str) -> tuple[str, str, str]:
