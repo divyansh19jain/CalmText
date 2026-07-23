@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -51,6 +51,98 @@ const MODES = [
   // { value: "voice", label: "Own Voice", Icon: LuFeather, pro: true },
 ];
 
+// Prepare a screenshot for OCR: upscale small images, grayscale, and
+// auto-invert dark-mode screenshots (light text on dark bg) so Tesseract
+// sees dark text on a light background — which it reads far more accurately.
+const preprocessScreenshot = (file, region) =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      // Crop to the selected region (if any), else use the whole image
+      const sx = region ? region.x : 0;
+      const sy = region ? region.y : 0;
+      const sw = region ? region.w : img.width;
+      const sh = region ? region.h : img.height;
+      const scale = Math.min(3, Math.max(1, 1500 / sw));
+      const w = Math.round(sw * scale);
+      const h = Math.round(sh * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+      const imgData = ctx.getImageData(0, 0, w, h);
+      const d = imgData.data;
+      let sum = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        const g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+        d[i] = d[i + 1] = d[i + 2] = g;
+        sum += g;
+      }
+      const avg = sum / (d.length / 4);
+      if (avg < 128) {
+        for (let i = 0; i < d.length; i += 4) {
+          d[i] = d[i + 1] = d[i + 2] = 255 - d[i];
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("blob failed"))),
+        "image/png",
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("image load failed"));
+    };
+    img.src = url;
+  });
+
+// Reduce raw OCR to just the conversation text. Chat screenshots include a
+// lot of UI: the contact header, timestamps, read-receipt ticks, date
+// separators, the "type a message" bar, and garbled bits from icons. We strip
+// timestamps/known UI text, then keep only lines that actually read like real
+// sentences (mostly dictionary-shaped words) so noise/gibberish is dropped.
+const cleanOcrText = (raw) => {
+  const TIME = /\d{1,2}[:.]\d{2}\s*(?:[ap]\.?\s?m\.?|[ap])?/gi;
+  const DATE_SEP =
+    /^(today|yesterday|mon(day)?|tue(sday)?|wed(nesday)?|thu(rsday)?|fri(day)?|sat(urday)?|sun(day)?|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})$/i;
+
+  // A line "reads like a message" when most of its tokens are real-ish words
+  // (letters only after trimming punctuation, and containing a vowel).
+  const looksLikeMessage = (line) => {
+    const tokens = line.split(/\s+/).filter(Boolean);
+    if (!tokens.length) return false;
+    const good = tokens.filter((t) => {
+      const w = t.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g, "");
+      return /^[A-Za-z][a-z]{1,14}$/.test(w) && /[aeiou]/i.test(w);
+    }).length;
+    return good >= 1 && good / tokens.length >= 0.6;
+  };
+
+  return (raw || "")
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(TIME, " ") // remove timestamps anywhere on the line
+        .replace(/type a message/gi, " ") // WhatsApp input bar
+        .replace(/[ \t]+/g, " ")
+        .trim(),
+    )
+    .filter((line) => {
+      if (!line) return false;
+      if (DATE_SEP.test(line)) return false;
+      return looksLikeMessage(line);
+    })
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+};
+
 const App = () => {
   const { token, user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -64,6 +156,12 @@ const App = () => {
   // Screenshot upload (I Received This): in-browser OCR fills the message box
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState(null);
+  // Crop step — pick the message area before reading it
+  const [ocrFile, setOcrFile] = useState(null); // selected image awaiting crop
+  const [ocrPreviewUrl, setOcrPreviewUrl] = useState(null);
+  const [cropRect, setCropRect] = useState(null); // {x,y,w,h} in displayed px
+  const cropImgRef = useRef(null);
+  const cropStart = useRef(null);
   const [conversationId, setConversationId] = useState(null);
   const [thread, setThread] = useState(null);
   const [ctText, setCtText] = useState("");
@@ -345,9 +443,8 @@ const App = () => {
     }
   };
 
-  // Read a screenshot with in-browser OCR and drop the text into the message box.
-  // Backend is untouched — the extracted text flows through the normal analyze path.
-  const handleScreenshotUpload = async (e) => {
+  // Step 1: pick a screenshot → open the crop preview (don't OCR yet).
+  const openScreenshotCropper = (e) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // allow re-picking the same file
     if (!file) return;
@@ -356,10 +453,68 @@ const App = () => {
       return;
     }
     setOcrError(null);
+    setCropRect(null);
+    setOcrFile(file);
+    setOcrPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const closeScreenshotCropper = () => {
+    if (ocrPreviewUrl) URL.revokeObjectURL(ocrPreviewUrl);
+    setOcrPreviewUrl(null);
+    setOcrFile(null);
+    setCropRect(null);
+    cropStart.current = null;
+  };
+
+  // Drag a selection box over the preview image
+  const onCropPointerDown = (e) => {
+    if (!cropImgRef.current) return;
+    const rect = cropImgRef.current.getBoundingClientRect();
+    cropStart.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    setCropRect({ x: cropStart.current.x, y: cropStart.current.y, w: 0, h: 0 });
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onCropPointerMove = (e) => {
+    if (!cropStart.current || !cropImgRef.current) return;
+    const rect = cropImgRef.current.getBoundingClientRect();
+    const cx = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const cy = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
+    setCropRect({
+      x: Math.min(cropStart.current.x, cx),
+      y: Math.min(cropStart.current.y, cy),
+      w: Math.abs(cx - cropStart.current.x),
+      h: Math.abs(cy - cropStart.current.y),
+    });
+  };
+  const onCropPointerUp = () => {
+    cropStart.current = null;
+  };
+
+  // Step 2: read the selected region (or the whole image) with in-browser OCR
+  // and drop the cleaned text into the message box. Backend is untouched.
+  const extractFromScreenshot = async () => {
+    if (!ocrFile) return;
+    const file = ocrFile;
+    const img = cropImgRef.current;
+    let region = null;
+    if (img && cropRect && cropRect.w > 8 && cropRect.h > 8) {
+      const scaleX = img.naturalWidth / img.clientWidth;
+      const scaleY = img.naturalHeight / img.clientHeight;
+      region = {
+        x: cropRect.x * scaleX,
+        y: cropRect.y * scaleY,
+        w: cropRect.w * scaleX,
+        h: cropRect.h * scaleY,
+      };
+    }
+    closeScreenshotCropper();
+    setOcrError(null);
     setOcrLoading(true);
     try {
-      const { data } = await Tesseract.recognize(file, "eng");
-      const text = (data?.text || "").trim();
+      // Pre-process for accuracy (falls back to the raw file if it fails)
+      const image = await preprocessScreenshot(file, region).catch(() => file);
+      const { data } = await Tesseract.recognize(image, "eng");
+      const text = cleanOcrText(data?.text);
       if (text) {
         setInputText((prev) => (prev.trim() ? `${prev}\n${text}` : text));
       } else {
@@ -867,7 +1022,7 @@ const App = () => {
                         <input
                           type="file"
                           accept="image/*"
-                          onChange={handleScreenshotUpload}
+                          onChange={openScreenshotCropper}
                           disabled={ocrLoading}
                           className="hidden"
                         />
@@ -1097,6 +1252,75 @@ const App = () => {
         </aside>
       </div>
       {/* end app-layout */}
+
+      {/* Screenshot crop step — drag to select just the messages, then read */}
+      {ocrPreviewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)" }}
+          onClick={closeScreenshotCropper}
+        >
+          <div
+            className="flex flex-col gap-3 w-full max-w-lg rounded-2xl p-4"
+            style={{ background: "var(--surface)", border: "1px solid var(--surface-border)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-bold text-gray-700">
+              Drag to select just the messages
+            </p>
+            <p className="text-xs text-gray-400 -mt-1.5">
+              Draw a box around the text you want. Skip it to read the whole image.
+            </p>
+            <div
+              className="relative select-none overflow-hidden rounded-lg mx-auto"
+              style={{ touchAction: "none", cursor: "crosshair", maxHeight: "60vh" }}
+              onPointerDown={onCropPointerDown}
+              onPointerMove={onCropPointerMove}
+              onPointerUp={onCropPointerUp}
+            >
+              <img
+                ref={cropImgRef}
+                src={ocrPreviewUrl}
+                alt="Screenshot preview"
+                draggable={false}
+                className="block max-w-full"
+                style={{ maxHeight: "60vh", pointerEvents: "none" }}
+              />
+              {cropRect && cropRect.w > 0 && cropRect.h > 0 && (
+                <div
+                  className="absolute border-2 border-blue-500 pointer-events-none"
+                  style={{
+                    left: cropRect.x,
+                    top: cropRect.y,
+                    width: cropRect.w,
+                    height: cropRect.h,
+                    background: "rgba(37,99,235,0.15)",
+                  }}
+                />
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <button
+                onClick={closeScreenshotCropper}
+                className="py-2.5 rounded-xl text-sm font-semibold border transition-colors"
+                style={{ borderColor: "var(--surface-border)", color: "#6b7280" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={extractFromScreenshot}
+                className="py-2.5 rounded-xl text-sm font-bold text-white transition-all"
+                style={{
+                  background: "linear-gradient(135deg,#2563EB,#3b82f6)",
+                  boxShadow: "0 3px 14px rgba(37,99,235,0.28)",
+                }}
+              >
+                {cropRect && cropRect.w > 8 ? "Read selection" : "Read whole image"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quota Exhausted Modal */}
       <QuotaExhaustedModal
