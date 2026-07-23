@@ -114,9 +114,10 @@ const UI_NOISE_RE =
   /^(forwarded|you deleted this message|this message was deleted|missed (voice|video) call|online|typing\.*)$/i;
 
 // Remove timestamps (anywhere), the WhatsApp input bar, and extra spaces.
+// The separator can be : . or - (OCR often misreads "1:28" as "1-28").
 const stripLineNoise = (line) =>
   (line || "")
-    .replace(/\d{1,2}[:.]\d{2}\s*(?:[ap]\.?\s?m\.?|[ap])?/gi, " ")
+    .replace(/\d{1,2}[:.\-]\d{2}\s*(?:[ap]\.?\s?m\.?|[ap])?/gi, " ")
     .replace(/type a message/gi, " ")
     .replace(/[ \t]+/g, " ")
     .trim();
@@ -174,7 +175,7 @@ const buildConversation = (data, width, height) => {
     (b.paragraphs || []).forEach((p) =>
       (p.lines || []).forEach((l) => {
         const raw = (l.text || "").replace(/\s+/g, " ").trim();
-        if (raw && l.bbox) all.push({ raw, ...l.bbox });
+        if (raw && l.bbox) all.push({ raw, conf: l.confidence, ...l.bbox });
       }),
     ),
   );
@@ -193,6 +194,8 @@ const buildConversation = (data, width, height) => {
 
   const msgs = [];
   body.forEach((l) => {
+    // Drop lines OCR wasn't confident about (usually garbled / cut-off text)
+    if (typeof l.conf === "number" && l.conf < 55) return;
     const text = stripLineNoise(l.raw);
     if (!isRealMessageLine(text)) return;
     const side = (l.x0 + l.x1) / 2 / width > 0.52 ? "me" : "them";

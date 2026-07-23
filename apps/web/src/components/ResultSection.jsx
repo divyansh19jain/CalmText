@@ -63,7 +63,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
         <label className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-3 block">
           {isReply ? 'Your Reply' : 'Original Message'}
         </label>
-        <p className="text-base font-semibold text-gray-900 leading-relaxed">
+        <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">
           {originalText}
         </p>
       </motion.div>
