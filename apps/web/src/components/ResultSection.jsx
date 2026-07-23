@@ -1,8 +1,33 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LuZap, LuBrain } from 'react-icons/lu';
+import { LuZap, LuBrain, LuCopy, LuCheck } from 'react-icons/lu';
 import mascotImg from '../assets/single-logo.png';
 import OutgoingLoop from './OutgoingLoop';
+
+// Small copy-to-clipboard button with its own "Copied" feedback.
+const CopyButton = ({ text }) => {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — user can select the text manually */
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="ml-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-500 hover:text-blue-700 transition-colors"
+    >
+      {copied ? <LuCheck className="w-3 h-3" /> : <LuCopy className="w-3 h-3" />}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
+  );
+};
 
 const MascotAvatar = () => {
   const [failed, setFailed] = useState(false);
@@ -51,6 +76,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
           <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">
             {isReply ? "Pax's gut check:" : "Pax's Take:"}
           </span>
+          <CopyButton text={results.pax} />
         </div>
         <div className="text-base font-serif text-gray-800 whitespace-pre-wrap leading-relaxed">
           {results.pax}
@@ -85,6 +111,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
               <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">SubText:</span>
               <span className="text-[11px] text-gray-400 font-serif italic">Your brain, back online — after the pause</span>
             </div>
+            <CopyButton text={results.subtext.replace(/^SubText\s*\n?/, '').trim()} />
           </div>
           <div className="text-sm font-serif text-gray-600 whitespace-pre-wrap leading-relaxed">
             {results.subtext.replace(/^SubText\s*\n?/, '').trim()}

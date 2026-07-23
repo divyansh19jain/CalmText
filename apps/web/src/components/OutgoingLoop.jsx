@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { LuSend, LuPencil, LuTrash2, LuPawPrint, LuCoffee, LuBrain } from 'react-icons/lu';
+import { LuSend, LuPencil, LuTrash2, LuPawPrint, LuCoffee, LuBrain, LuCopy, LuCheck } from 'react-icons/lu';
 import mascotImg from '../assets/single-logo.png';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
@@ -85,6 +85,19 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId }) => {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  // Copy the current reply draft so it can be pasted into a messaging app.
+  const handleCopyDraft = async () => {
+    if (!draft.trim()) return;
+    try {
+      await navigator.clipboard.writeText(draft);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setError('Could not copy. Please select the text and copy manually.');
+    }
+  };
 
   // Stuck-flow state
   const [goal, setGoal] = useState(null); // one of GOALS
@@ -229,7 +242,17 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId }) => {
 
   const DraftBox = ({ label = 'Your draft' }) => (
     <div className="draft-box rounded-lg bg-blue-50/60 border border-blue-100 p-3">
-      <p className="draft-label text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-1.5">{label}</p>
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="draft-label text-[10px] uppercase tracking-widest text-blue-400 font-bold">{label}</p>
+        <button
+          type="button"
+          onClick={handleCopyDraft}
+          className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-500 hover:text-blue-700 transition-colors"
+        >
+          {copied ? <LuCheck className="w-3 h-3" /> : <LuCopy className="w-3 h-3" />}
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
       <p className="text-sm font-serif text-gray-700 whitespace-pre-wrap">{draft}</p>
     </div>
   );

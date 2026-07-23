@@ -16,6 +16,7 @@ import {
   LuLock,
   LuPawPrint,
   LuReply,
+  LuImage,
 } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import ResultSection from "./components/ResultSection";
@@ -27,6 +28,7 @@ import UpgradeModal from "./components/UpgradeModal";
 import PaymentResultModal from "./components/PaymentResultModal";
 import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./context/AuthContext";
+import Tesseract from "tesseract.js";
 import mascotImg from "./assets/pax_mascot-update-01-copy.png";
 import mascotSingleImg from "./assets/single-logo.png";
 
@@ -59,6 +61,9 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [analyzedText, setAnalyzedText] = useState("");
+  // Screenshot upload (I Received This): in-browser OCR fills the message box
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState(null);
   const [conversationId, setConversationId] = useState(null);
   const [thread, setThread] = useState(null);
   const [ctText, setCtText] = useState("");
@@ -340,6 +345,33 @@ const App = () => {
     }
   };
 
+  // Read a screenshot with in-browser OCR and drop the text into the message box.
+  // Backend is untouched — the extracted text flows through the normal analyze path.
+  const handleScreenshotUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setOcrError("Please choose an image file.");
+      return;
+    }
+    setOcrError(null);
+    setOcrLoading(true);
+    try {
+      const { data } = await Tesseract.recognize(file, "eng");
+      const text = (data?.text || "").trim();
+      if (text) {
+        setInputText((prev) => (prev.trim() ? `${prev}\n${text}` : text));
+      } else {
+        setOcrError("Couldn't find any text in that screenshot.");
+      }
+    } catch {
+      setOcrError("Couldn't read that screenshot. Please try another image.");
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
   const reset = () => {
     setResults(null);
     setCtResult(null);
@@ -349,6 +381,7 @@ const App = () => {
     setCtText("");
     setIntent("");
     setError(null);
+    setOcrError(null);
   };
 
   // Pax's end-of-loop nudge: send the user into the existing Own Voice flow.
@@ -810,6 +843,41 @@ const App = () => {
                       }
                       className="paws-input h-36"
                     />
+                  )}
+
+                  {/* Screenshot upload — only for "I Received This" */}
+                  {mode === "input" && (
+                    <div className="flex flex-col gap-1.5 -mt-2">
+                      <label
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                          ocrLoading
+                            ? "opacity-60 cursor-not-allowed"
+                            : "cursor-pointer hover:bg-blue-50"
+                        }`}
+                        style={{
+                          background: "var(--surface)",
+                          border: "1px solid var(--surface-border)",
+                          color: "#2563EB",
+                        }}
+                      >
+                        <LuImage className="w-4 h-4 flex-shrink-0" />
+                        {ocrLoading
+                          ? "Reading screenshot…"
+                          : "Upload a screenshot"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleScreenshotUpload}
+                          disabled={ocrLoading}
+                          className="hidden"
+                        />
+                      </label>
+                      {ocrError && (
+                        <p className="text-red-500 text-xs text-center">
+                          {ocrError}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   {/* Action button */}
