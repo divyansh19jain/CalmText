@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import ThemeToggle from '../components/ThemeToggle';
 import UpgradeModal from '../components/UpgradeModal';
+import { STRIPE_ENABLED } from '../config/features';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 
@@ -239,13 +240,15 @@ const ProfilePage = () => {
                       : ''}
                   </p>
                 </div>
-                <button
-                  onClick={() => setShowUpgrade(true)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 transition-colors px-3 py-1.5 rounded-lg flex-shrink-0"
-                >
-                  <LuSparkles className="w-3.5 h-3.5" />
-                  {isSubscribed ? 'Change plan' : 'Upgrade'}
-                </button>
+                {STRIPE_ENABLED && (
+                  <button
+                    onClick={() => setShowUpgrade(true)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 transition-colors px-3 py-1.5 rounded-lg flex-shrink-0"
+                  >
+                    <LuSparkles className="w-3.5 h-3.5" />
+                    {isSubscribed ? 'Change plan' : 'Upgrade'}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -269,20 +272,22 @@ const ProfilePage = () => {
         )}
       </div>
 
-      {/* Upgrade / change-plan modal */}
-      <UpgradeModal
-        isOpen={showUpgrade}
-        onClose={() => setShowUpgrade(false)}
-        currentPlan={isSubscribed ? (profile?.subscription_plan || 'medium') : null}
-        onChanged={(data) =>
-          setProfile((p) => ({
-            ...p,
-            subscription_plan: data.subscription_plan,
-            subscription_status: data.subscription_status || p.subscription_status,
-            has_unlimited_search_access: true,
-          }))
-        }
-      />
+      {/* Upgrade / change-plan modal — only when Stripe is enabled */}
+      {STRIPE_ENABLED && (
+        <UpgradeModal
+          isOpen={showUpgrade}
+          onClose={() => setShowUpgrade(false)}
+          currentPlan={isSubscribed ? (profile?.subscription_plan || 'medium') : null}
+          onChanged={(data) =>
+            setProfile((p) => ({
+              ...p,
+              subscription_plan: data.subscription_plan,
+              subscription_status: data.subscription_status || p.subscription_status,
+              has_unlimited_search_access: true,
+            }))
+          }
+        />
+      )}
     </div>
   );
 };

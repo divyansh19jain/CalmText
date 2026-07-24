@@ -28,6 +28,7 @@ import UpgradeModal from "./components/UpgradeModal";
 import PaymentResultModal from "./components/PaymentResultModal";
 import ThemeToggle from "./components/ThemeToggle";
 import { useAuth } from "./context/AuthContext";
+import { STRIPE_ENABLED } from "./config/features";
 import Tesseract from "tesseract.js";
 import mascotImg from "./assets/pax_mascot-update-01-copy.png";
 import mascotSingleImg from "./assets/single-logo.png";
@@ -292,6 +293,7 @@ const App = () => {
   // Logged-in users are governed by the backend (search limit + unlimited flag),
   // so we only enforce the local limit for anonymous visitors here.
   const checkTrialAllowance = () => {
+    if (!STRIPE_ENABLED) return true; // Stripe off → trials never block
     if (isAuthenticated) return true;
     if (trialsUsed >= FREE_TRIAL_LIMIT) {
       setShowUpgradeModal(true);
@@ -333,6 +335,7 @@ const App = () => {
   // Handle Stripe Checkout return: ?checkout=success&session_id=... unlocks
   // the account; ?checkout=cancel just clears the params.
   useEffect(() => {
+    if (!STRIPE_ENABLED) return;
     const params = new URLSearchParams(window.location.search);
     const checkout = params.get("checkout");
     if (!checkout) return;
@@ -375,12 +378,14 @@ const App = () => {
   }, [token]);
 
   // Free searches left: backend count for logged-in users, local count for guests.
-  // null = unlimited / unknown → hide the hint.
-  const freeRemaining = !isAuthenticated
-    ? trialsLeft
-    : usage && !usage.has_unlimited_search_access
-      ? usage.remaining
-      : null;
+  // null = unlimited / unknown → hide the hint. Stripe off → always hidden.
+  const freeRemaining = !STRIPE_ENABLED
+    ? null
+    : !isAuthenticated
+      ? trialsLeft
+      : usage && !usage.has_unlimited_search_access
+        ? usage.remaining
+        : null;
 
   // Check if error is due to quota exhaustion
   const isQuotaExhausted = (error) => {
@@ -423,7 +428,7 @@ const App = () => {
         setHistoryItems(h.data.items || []);
       } catch (err) {
         if (err?.response?.status === 402) {
-          setShowUpgradeModal(true);
+          if (STRIPE_ENABLED) setShowUpgradeModal(true);
           refreshUsage();
         } else if (isQuotaExhausted(err)) {
           setShowQuotaModal(true);
@@ -462,7 +467,7 @@ const App = () => {
         }
       } catch (err) {
         if (err?.response?.status === 402) {
-          setShowUpgradeModal(true);
+          if (STRIPE_ENABLED) setShowUpgradeModal(true);
           refreshUsage();
         } else if (isQuotaExhausted(err)) {
           setShowQuotaModal(true);
@@ -504,7 +509,7 @@ const App = () => {
       }
     } catch (err) {
       if (err?.response?.status === 402) {
-        setShowUpgradeModal(true);
+        if (STRIPE_ENABLED) setShowUpgradeModal(true);
         refreshUsage();
       } else if (isQuotaExhausted(err)) {
         setShowQuotaModal(true);
@@ -1420,18 +1425,20 @@ const App = () => {
         onClose={() => setShowQuotaModal(false)}
       />
 
-      {/* Upgrade Modal — shown after free analyses are used up */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-      />
-
-      {/* Payment result — shown when returning from Stripe Checkout */}
-      <PaymentResultModal
-        isOpen={!!paymentResult}
-        status={paymentResult}
-        onClose={() => setPaymentResult(null)}
-      />
+      {/* Upgrade + payment modals — only when Stripe is enabled */}
+      {STRIPE_ENABLED && (
+        <>
+          <UpgradeModal
+            isOpen={showUpgradeModal}
+            onClose={() => setShowUpgradeModal(false)}
+          />
+          <PaymentResultModal
+            isOpen={!!paymentResult}
+            status={paymentResult}
+            onClose={() => setPaymentResult(null)}
+          />
+        </>
+      )}
     </div>
   );
 };
