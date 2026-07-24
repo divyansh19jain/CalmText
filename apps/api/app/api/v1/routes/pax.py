@@ -18,12 +18,21 @@ router = APIRouter()
 # Free searches a user gets before they must upgrade
 SEARCH_LIMIT = 3
 
+# Feature flag (code-level, not env): True re-enables the Stripe paywall —
+# searches beyond the free limit return 402 so the frontend shows the
+# upgrade page. False = Stripe off: the free trial never blocks anyone.
+# Keep in sync with STRIPE_ENABLED in apps/web/src/config/features.js.
+STRIPE_ENABLED = False
+
 def _check_search_limit(user) -> None:
     """Block the search if a non-unlimited user has used up their free searches.
 
     Anonymous users (user is None) are not tracked here. Raises 402 on the 4th
-    attempt so the frontend can show the payment page.
+    attempt so the frontend can show the payment page. No-op while Stripe is
+    disabled via the STRIPE_ENABLED flag.
     """
+    if not STRIPE_ENABLED:
+        return
     if user is None:
         return
     if getattr(user, "has_unlimited_search_access", False):
