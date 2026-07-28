@@ -17,14 +17,13 @@ class PaxService:
             return await self._gut_check(request, start_time)
 
         # A pasted screenshot transcript (lines like "Me:" / "Divyansh Jain:")
-        # gets the conversation-aware prompts; a single message keeps the
+        # gets the five-beat conversation read; a single message keeps the
         # original single-message analysis.
         if self._is_conversation(request.text):
-            version, pax_prompt = PromptService.get_prompt("pax_v4_conversation")
-            _, subtext_prompt = PromptService.get_prompt("subtext_v1_conversation")
-        else:
-            version, pax_prompt = PromptService.get_prompt("pax_v4_input")
-            _, subtext_prompt = PromptService.get_prompt("subtext_v1_input")
+            return await self._conversation_read(request, start_time)
+
+        version, pax_prompt = PromptService.get_prompt("pax_v4_input")
+        _, subtext_prompt = PromptService.get_prompt("subtext_v1_input")
 
         try:
             logger.info(f"Analyzing text for mode: {request.mode} using version: {version}")
@@ -60,6 +59,121 @@ class PaxService:
                 tokens_used=0,
                 error=str(e),
             )
+
+    async def _conversation_read(self, request: PaxAnalyzeRequest, start_time: float) -> PaxAnalyzeResponse:
+        """Whole-conversation read (client spec v5), in five beats:
+        Paxism -> Secret Sauce -> Subtext (You / Them) -> Fetch•Sniff•Stay ->
+        Your Turn coaching questions. One call so the Paxism and the
+        explanation stay consistent with each other. PAX never writes a reply.
+        """
+        version, prompt = PromptService.get_prompt("pax_conversation_v5")
+
+        try:
+            logger.info(f"Reading conversation using version: {version}")
+            raw, tokens = await self.llm_client.generate_completion(
+                system_prompt=prompt, user_text=request.text
+            )
+
+            parsed = self._parse_conversation_read(raw)
+            latency_ms = int((time.time() - start_time) * 1000)
+
+            # The Paxism leads, so it is what history and thread views show.
+            # `subtext` keeps a plain-text You/Them summary for those views.
+            legacy_subtext_lines = []
+            if parsed["subtext_you"]:
+                legacy_subtext_lines.append("You")
+                legacy_subtext_lines += [f"- {l}" for l in parsed["subtext_you"]]
+            if parsed["subtext_them"]:
+                legacy_subtext_lines.append("Them")
+                legacy_subtext_lines += [f"- {l}" for l in parsed["subtext_them"]]
+
+            return PaxAnalyzeResponse(
+                pax=parsed["paxism"] or raw.strip(),
+                subtext="\n".join(legacy_subtext_lines),
+                paxism=parsed["paxism"],
+                secret_sauce=parsed["secret_sauce"],
+                subtext_you=parsed["subtext_you"],
+                subtext_them=parsed["subtext_them"],
+                verdict=parsed["verdict"],
+                verdict_why=parsed["verdict_why"],
+                questions=parsed["questions"],
+                prompt_version=version,
+                model=self.llm_client.model_name,
+                latency_ms=latency_ms,
+                tokens_used=tokens,
+            )
+        except Exception as e:
+            logger.error(f"Error during conversation read: {str(e)}")
+            error_str = str(e).lower()
+            if 'insufficient_quota' in error_str or '429' in error_str:
+                raise
+            latency_ms = int((time.time() - start_time) * 1000)
+            return PaxAnalyzeResponse(
+                pax="Analysis failed.",
+                subtext="",
+                prompt_version=version if 'version' in locals() else "unknown",
+                model=self.llm_client.model_name,
+                latency_ms=latency_ms,
+                tokens_used=0,
+                error=str(e),
+            )
+
+    # Labelled blocks the conversation prompt returns, in order.
+    _CONV_LABELS = (
+        "PAXISM",
+        "SECRET_SAUCE",
+        "SUBTEXT_YOU",
+        "SUBTEXT_THEM",
+        "VERDICT",
+        "VERDICT_WHY",
+        "QUESTIONS",
+    )
+
+    @classmethod
+    def _parse_conversation_read(cls, raw: str) -> dict:
+        """Split the labelled blocks into fields. Tolerates missing blocks and
+        stray markdown/emoji the model may add around the labels."""
+        blocks = {label: "" for label in cls._CONV_LABELS}
+        current = None
+        for line in (raw or "").splitlines():
+            stripped = line.strip().lstrip("#*🐾🦴👃🎾✍️ ").strip()
+            matched = None
+            for label in cls._CONV_LABELS:
+                if stripped.upper().startswith(f"{label}:"):
+                    matched = label
+                    break
+            if matched:
+                current = matched
+                blocks[current] = stripped[len(matched) + 1 :].strip()
+            elif current:
+                blocks[current] = f"{blocks[current]}\n{line.strip()}".strip()
+
+        def bullets(text: str) -> list[str]:
+            items = []
+            for ln in text.splitlines():
+                ln = ln.strip().lstrip("-•*").strip()
+                # Drop a numeric prefix like "1." if the model adds one
+                ln = re.sub(r"^\d+[.)]\s*", "", ln)
+                if ln:
+                    items.append(ln)
+            return items
+
+        verdict = ""
+        verdict_raw = blocks["VERDICT"].upper()
+        for name in ("FETCH", "SNIFF", "STAY"):
+            if name in verdict_raw:
+                verdict = name.lower()
+                break
+
+        return {
+            "paxism": " ".join(blocks["PAXISM"].split()),
+            "secret_sauce": " ".join(blocks["SECRET_SAUCE"].split()),
+            "subtext_you": bullets(blocks["SUBTEXT_YOU"]),
+            "subtext_them": bullets(blocks["SUBTEXT_THEM"]),
+            "verdict": verdict,
+            "verdict_why": " ".join(blocks["VERDICT_WHY"].split()),
+            "questions": bullets(blocks["QUESTIONS"]),
+        }
 
     async def _gut_check(self, request: PaxAnalyzeRequest, start_time: float) -> PaxAnalyzeResponse:
         """Reply loop (client spec): the user enters their reply, PAX runs a

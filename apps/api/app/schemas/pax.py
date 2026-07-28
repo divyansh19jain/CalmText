@@ -14,6 +14,14 @@ class PaxAnalyzeResponse(BaseModel):
     # PAXism that follows a heated gut check. Empty for mode="input".
     gut: str = ""
     paxism: str = ""
+    # Conversation read (client spec v5): Paxism -> Secret Sauce -> Subtext
+    # (You / Them) -> Fetch•Sniff•Stay -> Your Turn. Empty for single messages.
+    secret_sauce: str = ""
+    subtext_you: list[str] = []
+    subtext_them: list[str] = []
+    verdict: str = ""          # "fetch" | "sniff" | "stay"
+    verdict_why: str = ""
+    questions: list[str] = []
     prompt_version: str
     model: str
     latency_ms: int
