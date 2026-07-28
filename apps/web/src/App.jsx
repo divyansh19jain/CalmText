@@ -43,6 +43,10 @@ const FREE_TRIAL_LIMIT = 3;
 const TRIAL_KEY_PREFIX = "ct_free_trials";
 const trialKeyFor = (user) => `${TRIAL_KEY_PREFIX}_${user?.id ?? "guest"}`;
 
+// A long conversation is often several screenshots — read them in order and
+// stitch the text together. Capped at 10, matching ChatGPT's upload limit.
+const MAX_SHOTS = 10;
+
 const MODES = [
   { value: "input", label: "I Received This", Icon: LuMessageSquare },
   { value: "output", label: "Reply", Icon: LuReply },
@@ -230,6 +234,10 @@ const App = () => {
   // Screenshot upload (I Received This): in-browser OCR fills the message box
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState(null);
+  // Numbered previews of the screenshots making up this conversation, in the
+  // order they were added (up to MAX_SHOTS), plus "reading 2 of 5" progress.
+  const [shots, setShots] = useState([]);
+  const [ocrProgress, setOcrProgress] = useState(null);
   // Crop step — pick the message area before reading it
   const [ocrFile, setOcrFile] = useState(null); // selected image awaiting crop
   const [ocrPreviewUrl, setOcrPreviewUrl] = useState(null);
@@ -521,19 +529,88 @@ const App = () => {
     }
   };
 
-  // Step 1: pick a screenshot → open the crop preview (don't OCR yet).
-  const openScreenshotCropper = (e) => {
-    const file = e.target.files?.[0];
+  // Pick screenshots. One image on its own keeps the crop-and-read flow; two
+  // or more (or adding to an existing set) go into the numbered queue and are
+  // read in order, so a conversation split across screenshots stays in sequence.
+  const handleScreenshotSelect = (e) => {
+    const picked = Array.from(e.target.files || []);
     e.target.value = ""; // allow re-picking the same file
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setOcrError("Please choose an image file.");
+    if (!picked.length) return;
+    const images = picked.filter((f) => f.type.startsWith("image/"));
+    if (!images.length) {
+      setOcrError("Please choose image files.");
       return;
     }
+    if (images.length === 1 && shots.length === 0) {
+      openScreenshotCropper(images[0]);
+      return;
+    }
+    addScreenshots(images);
+  };
+
+  // Step 1 (single image): open the crop preview (don't OCR yet).
+  const openScreenshotCropper = (file) => {
     setOcrError(null);
     setCropRect(null);
     setOcrFile(file);
     setOcrPreviewUrl(URL.createObjectURL(file));
+  };
+
+  // Queue screenshots (numbered in add order) and read them one after another.
+  const addScreenshots = async (images) => {
+    const room = MAX_SHOTS - shots.length;
+    if (room <= 0) {
+      setOcrError(`You can upload up to ${MAX_SHOTS} screenshots.`);
+      return;
+    }
+    const batch = images.slice(0, room);
+    setOcrError(
+      images.length > room
+        ? `Added the first ${room} — ${MAX_SHOTS} screenshots max.`
+        : null,
+    );
+    setShots((prev) => [
+      ...prev,
+      ...batch.map((file) => ({ url: URL.createObjectURL(file) })),
+    ]);
+    await readScreenshots(batch);
+  };
+
+  // Read a batch in order, appending each screenshot's text to the message box.
+  // One worker is reused across the batch so 10 images stay reasonably quick.
+  const readScreenshots = async (files) => {
+    setOcrLoading(true);
+    setOcrProgress({ done: 0, total: files.length });
+    try {
+      const worker = await Tesseract.createWorker("eng");
+      try {
+        for (let i = 0; i < files.length; i++) {
+          let processed = null;
+          try {
+            processed = await preprocessScreenshot(files[i], null);
+          } catch {
+            processed = null;
+          }
+          const image = processed ? processed.blob : files[i];
+          const { data } = await worker.recognize(image, {}, { blocks: true, text: true });
+          const convo = processed
+            ? buildConversation(data, processed.width, processed.height)
+            : null;
+          const text = convo || cleanOcrText(data?.text);
+          if (text) {
+            setInputText((prev) => (prev.trim() ? `${prev}\n${text}` : text));
+          }
+          setOcrProgress({ done: i + 1, total: files.length });
+        }
+      } finally {
+        await worker.terminate();
+      }
+    } catch {
+      setOcrError("Couldn't read those screenshots. Please try again.");
+    } finally {
+      setOcrLoading(false);
+      setOcrProgress(null);
+    }
   };
 
   const closeScreenshotCropper = () => {
@@ -588,6 +665,12 @@ const App = () => {
     closeScreenshotCropper();
     setOcrError(null);
     setOcrLoading(true);
+    // Show it as screenshot #1 so adding more keeps a visible running order
+    setShots((prev) =>
+      prev.length < MAX_SHOTS
+        ? [...prev, { url: URL.createObjectURL(file) }]
+        : prev,
+    );
     try {
       // Pre-process for accuracy (falls back to the raw file if it fails)
       let processed = null;
@@ -634,6 +717,9 @@ const App = () => {
     setIntent("");
     setError(null);
     setOcrError(null);
+    shots.forEach((s) => URL.revokeObjectURL(s.url));
+    setShots([]);
+    setOcrProgress(null);
   };
 
   // Pax's end-of-loop nudge: send the user into the existing Own Voice flow.
@@ -1033,7 +1119,8 @@ const App = () => {
                     </div>
                   </div>
 
-                  {/* Mobile mode tabs */}
+                  {/* Mode tabs, with the conversation upload on its own row
+                      underneath — same block, centered, equal size */}
                   <div className="mode-switcher md:hidden">
                     {MODES.map(({ value, label, Icon, pro }) => (
                       <button
@@ -1049,6 +1136,29 @@ const App = () => {
                         {pro && <LuLock className="w-3 h-3 flex-shrink-0 opacity-60" />}
                       </button>
                     ))}
+                    {mode === "input" && (
+                      <label
+                        className={`mode-tab ${ocrLoading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                        style={{ gridColumn: "1 / -1" }}
+                      >
+                        <LuImage className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="truncate">
+                          {ocrLoading
+                            ? ocrProgress && ocrProgress.total > 1
+                              ? `Reading ${ocrProgress.done + 1} of ${ocrProgress.total}…`
+                              : "Reading screenshot…"
+                            : "Upload Screenshot of Conversation"}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleScreenshotSelect}
+                          disabled={ocrLoading}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
                   </div>
 
                   {/* Inputs */}
@@ -1097,33 +1207,38 @@ const App = () => {
                     />
                   )}
 
-                  {/* Screenshot upload — only for "I Received This" */}
-                  {mode === "input" && (
-                    <div className="flex flex-col gap-1.5 -mt-2">
-                      <label
-                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                          ocrLoading
-                            ? "opacity-60 cursor-not-allowed"
-                            : "cursor-pointer hover:bg-blue-50"
-                        }`}
-                        style={{
-                          background: "var(--surface)",
-                          border: "1px solid var(--surface-border)",
-                          color: "#2563EB",
-                        }}
-                      >
-                        <LuImage className="w-4 h-4 flex-shrink-0" />
-                        {ocrLoading
-                          ? "Reading screenshot…"
-                          : "Upload a screenshot"}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={openScreenshotCropper}
-                          disabled={ocrLoading}
-                          className="hidden"
-                        />
-                      </label>
+                  {/* Uploaded screenshots — numbered so the conversation
+                      order is visible at a glance */}
+                  {mode === "input" && (shots.length > 0 || ocrError) && (
+                    <div className="flex flex-col gap-2 -mt-2">
+                      {shots.length > 0 && (
+                        <>
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            {shots.map((shot, i) => (
+                              <div
+                                key={shot.url}
+                                className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0"
+                                style={{ border: "1px solid var(--surface-border)" }}
+                              >
+                                <img
+                                  src={shot.url}
+                                  alt={`Screenshot ${i + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                <span
+                                  className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                                  style={{ background: "rgba(37,99,235,0.92)" }}
+                                >
+                                  {i + 1}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-center text-[11px] text-blue-400">
+                            {shots.length} of {MAX_SHOTS} screenshots · read in this order
+                          </p>
+                        </>
+                      )}
                       {ocrError && (
                         <p className="text-red-500 text-xs text-center">
                           {ocrError}

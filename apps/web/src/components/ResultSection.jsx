@@ -97,27 +97,10 @@ const ConversationRead = ({ results }) => {
         </div>
       </motion.div>
 
-      {/* 🦴 Secret Sauce — why that Paxism fits this conversation */}
-      {secretSauce && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}
-          className="reflection-box flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <MascotAvatar />
-            <div className="flex flex-col">
-              <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">🦴 Secret Sauce</span>
-              <span className="text-[11px] text-gray-400 font-serif italic">Why Pax said that</span>
-            </div>
-            <CopyButton text={secretSauce} />
-          </div>
-          <div className="text-base font-serif text-gray-700 whitespace-pre-wrap leading-relaxed">
-            {secretSauce}
-          </div>
-        </motion.div>
-      )}
-
-      {/* 👃 Subtext — what each side may be communicating */}
-      {(you.length > 0 || them.length > 0) && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
+      {/* 👃 Subtext — the Secret Sauce (why that Paxism fits) leads, then
+          what each side may be communicating. Merged per client. */}
+      {(secretSauce || you.length > 0 || them.length > 0) && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
           className="reflection-box flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <BrainAvatar />
@@ -125,8 +108,19 @@ const ConversationRead = ({ results }) => {
               <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">👃 Subtext</span>
               <span className="text-[11px] text-gray-400 font-serif italic">Possibilities, not certainties</span>
             </div>
+            <CopyButton text={secretSauce} />
           </div>
           <div className="flex flex-col gap-4">
+            {secretSauce && (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] uppercase tracking-widest text-blue-400 font-bold">
+                  🦴 Secret Sauce
+                </span>
+                <div className="text-base font-serif text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {secretSauce}
+                </div>
+              </div>
+            )}
             {you.length > 0 && <Bullets title="You" items={you} />}
             {them.length > 0 && <Bullets title="Them" items={them} />}
           </div>
@@ -198,16 +192,19 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
   return (
     <div className="flex flex-col gap-5">
 
-      {/* Original Message */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
-        className="glass-card">
-        <label className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-3 block">
-          {isReply ? 'Your Reply' : isConversationRead ? 'The Conversation' : 'Original Message'}
-        </label>
-        <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">
-          {originalText}
-        </p>
-      </motion.div>
+      {/* Original message — skipped for a whole-conversation read: the user
+          just supplied it, so repeating it is only extra text (client). */}
+      {!isConversationRead && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
+          className="glass-card">
+          <label className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-3 block">
+            {isReply ? 'Your Reply' : 'Original Message'}
+          </label>
+          <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">
+            {originalText}
+          </p>
+        </motion.div>
+      )}
 
       {/* Whole-conversation read: Paxism → Secret Sauce → Subtext →
           Fetch·Sniff·Stay → Your Turn */}
