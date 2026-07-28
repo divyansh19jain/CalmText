@@ -52,8 +52,149 @@ const BrainAvatar = () => (
   </div>
 );
 
+// Fetch • Sniff • Stay — the conversation verdict (client spec v5).
+const VERDICTS = [
+  { key: 'fetch', dot: '🟢', label: 'Fetch', hint: 'Good ground — go ahead' },
+  { key: 'sniff', dot: '🟡', label: 'Sniff', hint: 'Look closer before replying' },
+  { key: 'stay', dot: '🔴', label: 'Stay', hint: 'Kindest move is to hold off' },
+];
+
+// Whole-conversation read (client spec v5), in five beats:
+// 🐾 Paxism → 🦴 Secret Sauce → 👃 Subtext (You / Them) →
+// 🎾 Fetch•Sniff•Stay → ✍️ Your Turn. The Paxism leads on purpose: it
+// lowers the emotional stakes before any analysis.
+const ConversationRead = ({ results }) => {
+  const { paxism, secret_sauce: secretSauce, subtext_you: you = [],
+    subtext_them: them = [], verdict, verdict_why: verdictWhy,
+    questions = [] } = results;
+
+  const Bullets = ({ title, items }) => (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[10px] uppercase tracking-widest text-blue-400 font-bold">{title}</span>
+      <ul className="flex flex-col gap-1">
+        {items.map((line) => (
+          <li key={line} className="text-sm font-serif text-gray-600 leading-relaxed flex gap-2">
+            <span className="text-blue-300 flex-shrink-0">·</span>
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  return (
+    <>
+      {/* 🐾 Paxism — leads, and sets the mindset */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.10 }}
+        className="reflection-box flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <MascotAvatar />
+          <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">🐾 Paxism</span>
+          <CopyButton text={paxism} />
+        </div>
+        <div className="text-lg font-serif text-gray-800 leading-relaxed italic">
+          “{paxism}”
+        </div>
+      </motion.div>
+
+      {/* 🦴 Secret Sauce — why that Paxism fits this conversation */}
+      {secretSauce && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }}
+          className="reflection-box flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <MascotAvatar />
+            <div className="flex flex-col">
+              <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">🦴 Secret Sauce</span>
+              <span className="text-[11px] text-gray-400 font-serif italic">Why Pax said that</span>
+            </div>
+            <CopyButton text={secretSauce} />
+          </div>
+          <div className="text-base font-serif text-gray-700 whitespace-pre-wrap leading-relaxed">
+            {secretSauce}
+          </div>
+        </motion.div>
+      )}
+
+      {/* 👃 Subtext — what each side may be communicating */}
+      {(you.length > 0 || them.length > 0) && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}
+          className="reflection-box flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <BrainAvatar />
+            <div className="flex flex-col">
+              <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">👃 Subtext</span>
+              <span className="text-[11px] text-gray-400 font-serif italic">Possibilities, not certainties</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            {you.length > 0 && <Bullets title="You" items={you} />}
+            {them.length > 0 && <Bullets title="Them" items={them} />}
+          </div>
+        </motion.div>
+      )}
+
+      {/* 🎾 Fetch • Sniff • Stay */}
+      {verdict && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}
+          className="reflection-box flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <MascotAvatar />
+            <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">🎾 Fetch · Sniff · Stay</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {VERDICTS.map((v) => {
+              const active = v.key === verdict;
+              return (
+                <div
+                  key={v.key}
+                  className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl text-center transition-all ${active ? '' : 'opacity-40'}`}
+                  style={{
+                    background: active ? 'rgba(37,99,235,0.10)' : 'var(--surface)',
+                    border: `1px solid ${active ? 'rgba(37,99,235,0.35)' : 'var(--surface-border)'}`,
+                  }}
+                >
+                  <span className="text-base leading-none">{v.dot}</span>
+                  <span className="text-xs font-bold text-gray-700">{v.label}</span>
+                  <span className="text-[10px] text-gray-400 leading-tight">{v.hint}</span>
+                </div>
+              );
+            })}
+          </div>
+          {verdictWhy && (
+            <div className="text-sm font-serif text-gray-700 leading-relaxed">{verdictWhy}</div>
+          )}
+        </motion.div>
+      )}
+
+      {/* ✍️ Your Turn — coaching questions; Pax never writes the reply */}
+      {questions.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.34 }}
+          className="reflection-box flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <MascotAvatar />
+            <div className="flex flex-col">
+              <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">✍️ Your Turn</span>
+              <span className="text-[11px] text-gray-400 font-serif italic">Your words — Pax just asks the questions</span>
+            </div>
+          </div>
+          <ul className="flex flex-col gap-2.5">
+            {questions.map((q) => (
+              <li key={q} className="text-sm font-serif text-gray-700 leading-relaxed flex gap-2.5">
+                <span className="text-blue-400 flex-shrink-0">🐾</span>
+                <span>{q}</span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
+      )}
+    </>
+  );
+};
+
 const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHistoryRefresh, conversationId }) => {
   const isReply = mode === 'output';
+  // A whole-conversation read comes back in the five-beat format.
+  const isConversationRead = !isReply && !!results.secret_sauce;
   return (
     <div className="flex flex-col gap-5">
 
@@ -61,14 +202,19 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}
         className="glass-card">
         <label className="text-[10px] uppercase tracking-widest text-blue-400 font-bold mb-3 block">
-          {isReply ? 'Your Reply' : 'Original Message'}
+          {isReply ? 'Your Reply' : isConversationRead ? 'The Conversation' : 'Original Message'}
         </label>
         <p className="text-base font-semibold text-gray-900 leading-relaxed whitespace-pre-wrap">
           {originalText}
         </p>
       </motion.div>
 
+      {/* Whole-conversation read: Paxism → Secret Sauce → Subtext →
+          Fetch·Sniff·Stay → Your Turn */}
+      {isConversationRead && <ConversationRead results={results} />}
+
       {/* Pax box — for replies this is the gut check (client spec) */}
+      {!isConversationRead && (
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.10 }}
         className="reflection-box flex flex-col gap-4">
         <div className="flex items-center gap-3">
@@ -82,10 +228,11 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
           {results.pax}
         </div>
       </motion.div>
+      )}
 
       {/* PAXism — only when a reply's gut check ran hot: de-escalation
           from emotion to calming thought */}
-      {results.paxism && (
+      {!isConversationRead && results.paxism && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}
           className="reflection-box flex flex-col gap-4">
           <div className="flex items-center gap-3">
@@ -102,7 +249,7 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
       )}
 
       {/* SubText box */}
-      {results.subtext && (
+      {!isConversationRead && results.subtext && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.17 }}
           className="reflection-box flex flex-col gap-4">
           <div className="flex items-center gap-3">
