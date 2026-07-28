@@ -172,7 +172,8 @@ class PaxService:
             "subtext_them": bullets(blocks["SUBTEXT_THEM"]),
             "verdict": verdict,
             "verdict_why": " ".join(blocks["VERDICT_WHY"].split()),
-            "questions": bullets(blocks["QUESTIONS"]),
+            # Exactly three options, even if the model offers more
+            "questions": bullets(blocks["QUESTIONS"])[:3],
         }
 
     async def _gut_check(self, request: PaxAnalyzeRequest, start_time: float) -> PaxAnalyzeResponse:

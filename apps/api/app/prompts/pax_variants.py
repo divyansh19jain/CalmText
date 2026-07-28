@@ -544,9 +544,9 @@ VERDICT: exactly one word — FETCH, SNIFF or STAY.
 
 VERDICT_WHY: One concise sentence explaining the verdict.
 
-QUESTIONS: 2–4 coaching questions that help the reader write their OWN message.
-One per line, starting with "- ". Questions only — never a draft, never suggested
-wording. In the spirit of:
+QUESTIONS: EXACTLY 3 coaching questions that help the reader write their OWN
+message — no more, no fewer. One per line, starting with "- ". Questions only —
+never a draft, never suggested wording. In the spirit of:
 - "What's the one thing you want them to understand?"
 - "Could you say this in half as many words?"
 - "What emotion are you hoping they'll feel after reading it?"
