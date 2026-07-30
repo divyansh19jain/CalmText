@@ -10,6 +10,26 @@ class PaxService:
     def __init__(self, llm_client: LLMClient):
         self.llm_client = llm_client
 
+    @staticmethod
+    def _trim_dog_reaction(text: str) -> str:
+        """Keep Pax's reaction to ONE line with at most two observations.
+
+        The prompts ask for this, but a stack of four short sentences reads as
+        busy, so cap it here too: take the first two observations and join them
+        with "and" if the model separated them into sentences/lines.
+        """
+        parts = [p.strip() for p in re.split(r"[\n.]+", (text or "")) if p.strip()]
+        if not parts:
+            return (text or "").strip()
+        if len(parts) == 1:
+            return f"{parts[0]}."
+        first, second = parts[0], parts[1]
+        # Already joined by a connector? Keep the model's own phrasing.
+        if re.search(r"\b(and|or|but)\b", first, re.IGNORECASE):
+            return f"{first}."
+        second = second[0].lower() + second[1:] if second else second
+        return f"{first} and {second}."
+
     async def analyze(self, request: PaxAnalyzeRequest) -> PaxAnalyzeResponse:
         start_time = time.time()
 
@@ -36,7 +56,7 @@ class PaxService:
             latency_ms = int((time.time() - start_time) * 1000)
 
             return PaxAnalyzeResponse(
-                pax=pax_text.strip(),
+                pax=self._trim_dog_reaction(pax_text),
                 subtext=subtext_text.strip(),
                 prompt_version=version,
                 model=self.llm_client.model_name,
@@ -235,8 +255,8 @@ class PaxService:
         labelled = len(cls._LABEL_RE.findall(text))
         return labelled >= 2 and bool(cls._ME_RE.search(text))
 
-    @staticmethod
-    def _parse_gut_check(raw: str) -> tuple[str, str, str]:
+    @classmethod
+    def _parse_gut_check(cls, raw: str) -> tuple[str, str, str]:
         """Split the model output into (gut, instinct line, paxism).
 
         Expected shape:
@@ -253,4 +273,4 @@ class PaxService:
 
         instinct = lines[0] if lines else raw.strip()
         paxism = " ".join(lines[1:]) if len(lines) > 1 else ""
-        return gut, instinct, paxism
+        return gut, cls._trim_dog_reaction(instinct), paxism
