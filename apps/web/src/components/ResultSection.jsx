@@ -201,20 +201,8 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
   // A whole-conversation read comes back in the five-beat format.
   const isConversationRead = !isReply && !!results.secret_sauce;
 
-  // Reveal the outputs ONE AT A TIME. The user taps "Next" to move at their
-  // own pace — keeping cognitive load low when dealing with emotion (client).
-  // Reset to the first step whenever a new result arrives.
-  const [step, setStep] = useState(0);
-  // Reset to the first step when a new result arrives (React's documented
-  // "adjust state while rendering" pattern — no effect needed).
-  const [prevResults, setPrevResults] = useState(results);
-  if (prevResults !== results) {
-    setPrevResults(results);
-    setStep(0);
-  }
-
-  // The outputs to reveal, in order. The original message stays above as
-  // persistent context; only these get paced behind "Next".
+  // Everything on ONE page — Pax's take and the subtext together, no stepping
+  // through (client). Built in order, then all rendered at once.
   const outputs = [];
   if (isConversationRead) {
     outputs.push(...buildConversationBeats(results));
@@ -272,8 +260,6 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
     }
   }
 
-  const analysisDone = step >= outputs.length - 1;
-
   return (
     <div className="flex flex-col gap-5">
 
@@ -291,61 +277,20 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
         </motion.div>
       )}
 
-      {/* One output on screen at a time — keeps it decluttered. "Back" steps
-          through the earlier ones without stacking them all up. */}
-      {outputs[Math.min(step, outputs.length - 1)]}
+      {/* All outputs together on one page */}
+      {outputs}
 
-      {/* Step controls — progress dots, Next (own pace), Back, calm caption */}
-      {!analysisDone && (
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-center justify-center gap-1.5">
-            {outputs.map((_, i) => (
-              <span
-                key={i}
-                className="h-1.5 rounded-full transition-all"
-                style={{
-                  width: i === step ? 20 : 6,
-                  background: i <= step ? '#3b82f6' : 'rgba(59,130,246,0.25)',
-                }}
-              />
-            ))}
-          </div>
-          <motion.button
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            onClick={() => setStep((s) => s + 1)}
-            className="btn-paws btn-paws-primary py-3 text-sm font-bold"
-          >
-            Next
-          </motion.button>
-          <div className="flex items-center justify-center gap-4">
-            {step > 0 && (
-              <button
-                onClick={() => setStep((s) => Math.max(0, s - 1))}
-                className="text-xs text-blue-400 hover:text-blue-600 font-semibold transition-colors"
-              >
-                ← Back
-              </button>
-            )}
-            <span className="text-[11px] text-blue-300">Take a breath, then continue</span>
-          </div>
-        </div>
-      )}
-
-      {/* After the reading: draft a reply (its own steps + choices), then CTA */}
-      {analysisDone && (
-        <>
-          <OutgoingLoop token={token} onHistoryRefresh={onHistoryRefresh} conversationId={conversationId} />
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.40 }}>
-            <button onClick={onNewAnalysis} className="btn-paws btn-paws-primary py-4 text-sm font-bold">
-              Analyze Another Message
-            </button>
-          </motion.div>
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-blue-300 tracking-widest uppercase">
-            <LuZap className="w-3 h-3" />
-            {results.latency_ms}ms · Pax Architecture v4
-          </div>
-        </>
-      )}
+      {/* Then: draft a reply, and the CTA */}
+      <OutgoingLoop token={token} onHistoryRefresh={onHistoryRefresh} conversationId={conversationId} />
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.40 }}>
+        <button onClick={onNewAnalysis} className="btn-paws btn-paws-primary py-4 text-sm font-bold">
+          Analyze Another Message
+        </button>
+      </motion.div>
+      <div className="flex items-center justify-center gap-1.5 text-[10px] text-blue-300 tracking-widest uppercase">
+        <LuZap className="w-3 h-3" />
+        {results.latency_ms}ms · Pax Architecture v4
+      </div>
     </div>
   );
 };

@@ -47,6 +47,10 @@ const trialKeyFor = (user) => `${TRIAL_KEY_PREFIX}_${user?.id ?? "guest"}`;
 // stitch the text together. Capped at 10, matching ChatGPT's upload limit.
 const MAX_SHOTS = 10;
 
+// The Decode / Refine / Clarity cards under the home screen. Hidden per
+// client (too cluttered); flip to true to bring them back.
+const SHOW_FEATURE_CARDS = false;
+
 const MODES = [
   { value: "input", label: "I Received This", Icon: LuMessageSquare },
   { value: "output", label: "Reply", Icon: LuReply },
@@ -1321,7 +1325,9 @@ const App = () => {
                     </p>
                   )}
 
-                  {/* Feature hint cards */}
+                  {/* Feature hint cards (Decode / Refine / Clarity) — hidden
+                      per client: too cluttered. Kept for possible later use. */}
+                  {SHOW_FEATURE_CARDS && (
                   <div className="grid grid-cols-3 gap-3 mt-1">
                     {[
                       {
@@ -1364,6 +1370,7 @@ const App = () => {
                       </div>
                     ))}
                   </div>
+                  )}
 
                   {/* Footer tagline */}
                   <p className="text-center text-[11px] text-blue-300 pb-2">
