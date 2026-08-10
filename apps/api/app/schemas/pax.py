@@ -57,6 +57,17 @@ class PaxCoachResponse(BaseModel):
     high_risk: bool = False
     latency_ms: int
 
+class PaxReflectRequest(BaseModel):
+    text: str = Field(..., description="The original received message")
+    answers: list[str] = Field(
+        default_factory=list,
+        description="The reader's answers to the 6 reflection questions, in order",
+    )
+
+class PaxReflectResponse(BaseModel):
+    reflection: str
+    latency_ms: int
+
 class PaxFeedbackRequest(BaseModel):
     text: str
     pax: str

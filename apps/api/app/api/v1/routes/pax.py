@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import time
 import asyncio
-from app.schemas.pax import PaxAnalyzeRequest, PaxAnalyzeResponse, PaxFeedbackRequest, PaxFeedbackResponse, ClearTextRequest, ClearTextResponse, OwnVoiceRequest, OwnVoiceResponse, PaxCoachRequest, PaxCoachResponse
-from app.prompts.pax_variants import CLEARTEXT_V1_PROMPT, OWNVOICE_V1_PROMPT, PAX_COACH_V1_PROMPT
+from app.schemas.pax import PaxAnalyzeRequest, PaxAnalyzeResponse, PaxFeedbackRequest, PaxFeedbackResponse, ClearTextRequest, ClearTextResponse, OwnVoiceRequest, OwnVoiceResponse, PaxCoachRequest, PaxCoachResponse, PaxReflectRequest, PaxReflectResponse
+from app.prompts.pax_variants import CLEARTEXT_V1_PROMPT, OWNVOICE_V1_PROMPT, PAX_COACH_V1_PROMPT, PAX_REFLECT_V1_PROMPT
 from app.services.pax_service import PaxService
 from app.services.feedback_service import FeedbackService
 from app.core.dependencies import get_llm_client, get_claude_client, get_optional_user, get_current_user, apply_user_model_tier
@@ -303,6 +303,48 @@ async def coach_pax(
 
     latency_ms = int((time.time() - start) * 1000)
     return PaxCoachResponse(feedback=feedback.strip(), high_risk=high_risk, latency_ms=latency_ms)
+
+@router.post("/reflect", response_model=PaxReflectResponse)
+async def reflect_pax(
+    request: PaxReflectRequest,
+    llm_client: LLMClient = Depends(get_llm_client),
+    current_user=Depends(get_optional_user),
+):
+    """"Help me think" reflection loop: after the reader answers the six
+    questions in their own words, Pax reflects their clarity back. Pax never
+    writes the reply — it only helps them see what they already arrived at.
+
+    Not counted against the search limit — it is a sub-step of an analysis the
+    user already spent a search on.
+    """
+    apply_user_model_tier(llm_client, current_user)
+    start = time.time()
+
+    labels = [
+        "What actually happened",
+        "What they're assuming it means",
+        "What context they might be missing",
+        "What they're feeling",
+        "What they want the other person to understand",
+        "Their own first words",
+    ]
+    parts = [f"ORIGINAL MESSAGE:\n{request.text}", "", "REFLECTIONS:"]
+    for i, ans in enumerate(request.answers or []):
+        label = labels[i] if i < len(labels) else f"Q{i + 1}"
+        parts.append(f"- {label}: {(ans or '').strip()}")
+    user_text = "\n".join(parts)
+
+    try:
+        reflection, _ = await llm_client.generate_completion(PAX_REFLECT_V1_PROMPT, user_text)
+    except Exception as e:
+        error_str = str(e).lower()
+        if 'insufficient_quota' in error_str or '429' in error_str:
+            await _notify_admin_quota_exhausted(current_user)
+            raise HTTPException(status_code=429, detail="Something went wrong")
+        raise
+
+    latency_ms = int((time.time() - start) * 1000)
+    return PaxReflectResponse(reflection=reflection.strip(), latency_ms=latency_ms)
 
 @router.post("/feedback", response_model=PaxFeedbackResponse)
 async def submit_feedback(request: PaxFeedbackRequest):
