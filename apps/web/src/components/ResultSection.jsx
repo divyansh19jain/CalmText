@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { LuZap, LuBrain, LuCopy, LuCheck } from 'react-icons/lu';
 import mascotImg from '../assets/single-logo.png';
 import OutgoingLoop from './OutgoingLoop';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 
 // Small copy-to-clipboard button with its own "Copied" feedback.
 const CopyButton = ({ text }) => {
@@ -196,10 +199,103 @@ const buildConversationBeats = (results) => {
   return beats;
 };
 
+// --- PAX Pause (client) -------------------------------------------------
+// Before any analysis, Pax notices when a message feels emotionally important
+// and quietly sits beside the reader first — body language + a gentle line +
+// three calm choices. Urgency is read from Pax's OWN dog reaction: guarded,
+// tense body language means higher urgency; a wag or head-tilt stays calm.
+const assessUrgency = (pax) => {
+  const t = (pax || '').toLowerCase();
+  if (/(freez|ears back|watch(es|ing)? the door|leaves the room|tail stops|backs? away|cowers)/.test(t)) return 'very_high';
+  if (/(pac(e|ing)|sits up|side-?eye|stiff|stands? still|stares|growl|hackles)/.test(t)) return 'high';
+  if (/(one ear up|nose|sniff|tilt|cocks head|perks?)/.test(t)) return 'medium';
+  return 'low';
+};
+
+// No words — just the dog reacting, matched to the urgency (client).
+const PAUSE_BODY = {
+  medium: 'Head tilt.',
+  high: 'Dog quietly sits.',
+  very_high: 'Dog walks over and gently leans against you.',
+};
+
+const PAUSE_LINES = [
+  'Mind if I sit with you on this one first?',
+  'This feels a little heavier than most messages. Want to sit together for a minute?',
+  "You don't have to decide in the next ten seconds. I'm here if you want company.",
+  'My ears just perked up. This one might deserve another look first.',
+  "Let's slow the paws down for just a moment.",
+  'Nothing says you have to respond right now.',
+];
+
+// Pick a gentle line (stable per result — indexed off the text, no randomness).
+const pauseLineFor = (urgency, pax) =>
+  urgency === 'very_high'
+    ? 'This feels important. Mind if I just sit here with you for a moment?'
+    : PAUSE_LINES[(pax || '').length % PAUSE_LINES.length];
+
+// "Help me think" — a guided reflection loop (client v1.1). One question at a
+// time, a private box to write in, then Next (loops back at the end) until the
+// reader is done. Pax holds the space; the words stay the reader's own.
+const REFLECT_QUESTIONS = [
+  { q: 'What actually happened?', hint: 'Separate the facts from your interpretation.' },
+  { q: 'What are you assuming it means?', hint: 'Name the story your brain filled in.' },
+  { q: 'What context might you be missing?', hint: "Not “you're wrong” — just, what don't we know?" },
+  { q: 'What are you feeling right now?', hint: 'Especially anger, fear, rejection, embarrassment, urgency.' },
+  { q: 'What do you want the other person to understand?', hint: 'Find the real goal.' },
+  { q: 'Pause. Now write it in your own words.', hint: 'Your words, your call — Pax just held the space.' },
+];
+
 const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHistoryRefresh, conversationId }) => {
   const isReply = mode === 'output';
   // A whole-conversation read comes back in the five-beat format.
   const isConversationRead = !isReply && !!results.secret_sauce;
+
+  // PAX Pause: only for a single received message (not replies / conversation
+  // reads). Urgency comes from Pax's dog reaction; low urgency skips the pause.
+  const urgency = isReply || isConversationRead ? 'low' : assessUrgency(results.pax);
+  // Only genuinely tense reactions get the Pause — calm or merely curious
+  // messages ("cocks head") go straight to the analysis (client: interrupt
+  // only when a message feels emotionally important).
+  const needsPause = urgency === 'high' || urgency === 'very_high';
+  // pauseStage: 'pause' (sit-beside screen) → 'calm' (breathe) → 'done' (analysis)
+  const [pauseStage, setPauseStage] = useState(needsPause ? 'pause' : 'done');
+  // "Help me think" reflection loop state
+  const [reflectIndex, setReflectIndex] = useState(0);
+  const [reflectAnswers, setReflectAnswers] = useState(() =>
+    Array(REFLECT_QUESTIONS.length).fill(''),
+  );
+  const [reflectLoading, setReflectLoading] = useState(false);
+  const [reflectRead, setReflectRead] = useState('');
+  const [prevResults, setPrevResults] = useState(results);
+  if (prevResults !== results) {
+    setPrevResults(results);
+    setPauseStage(needsPause ? 'pause' : 'done');
+    setReflectIndex(0);
+    setReflectAnswers(Array(REFLECT_QUESTIONS.length).fill(''));
+    setReflectLoading(false);
+    setReflectRead('');
+  }
+
+  // Finish the reflection: send the reader's own answers to Pax and get a warm
+  // read built from them (Pax reflects their clarity back — never a draft).
+  const finishReflection = async () => {
+    setReflectLoading(true);
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const { data } = await axios.post(
+        `${API_BASE_URL}/pax/reflect`,
+        { text: originalText, answers: reflectAnswers },
+        { headers },
+      );
+      setReflectRead((data && data.reflection) || '');
+    } catch {
+      setReflectRead('');
+    } finally {
+      setReflectLoading(false);
+      setPauseStage('reflectResult');
+    }
+  };
 
   // Everything on ONE page — Pax's take and the subtext together, no stepping
   // through (client). Built in order, then all rendered at once.
@@ -258,6 +354,153 @@ const ResultSection = ({ results, originalText, onNewAnalysis, mode, token, onHi
         </motion.div>
       );
     }
+  }
+
+  // PAX Pause — sit beside the reader before showing any analysis.
+  if (pauseStage === 'pause') {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        className="flex flex-col items-center gap-6 py-8 text-center">
+        <img src={mascotImg} alt="Pax" className="w-32 h-32 object-contain" />
+        <p className="text-sm text-blue-400 font-serif italic">🐾 {PAUSE_BODY[urgency]}</p>
+        <p className="text-xl font-serif text-gray-800 max-w-md leading-relaxed">
+          {pauseLineFor(urgency, results.pax)}
+        </p>
+        <div className="flex flex-col gap-2.5 w-full max-w-xs mt-1">
+          <button
+            onClick={() => setPauseStage('done')}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white transition-all"
+            style={{ background: 'linear-gradient(135deg,#16a34a,#22c55e)' }}
+          >
+            🟢 Continue
+          </button>
+          <button
+            onClick={() => setPauseStage('calm')}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all"
+            style={{ background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.45)', color: '#b45309' }}
+          >
+            🟡 Pause with PAX
+          </button>
+          <button
+            onClick={() => setPauseStage('reflect')}
+            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all"
+            style={{ background: 'rgba(37,99,235,0.12)', border: '1px solid rgba(37,99,235,0.45)', color: '#2563EB' }}
+          >
+            🔵 Help me think
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // "Pause with PAX" — one quiet breath, then continue when ready.
+  if (pauseStage === 'calm') {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        className="flex flex-col items-center gap-5 py-10 text-center">
+        <img src={mascotImg} alt="Pax" className="w-28 h-28 object-contain" />
+        <p className="text-xl font-serif text-gray-800 max-w-md leading-relaxed">
+          Take one slow breath. Nothing has to happen this second.
+        </p>
+        <p className="text-sm text-gray-400 font-serif italic">Pax is right here, not going anywhere.</p>
+        <button
+          onClick={() => setPauseStage('done')}
+          className="btn-paws btn-paws-primary py-3 text-sm font-bold w-full max-w-xs mt-1"
+        >
+          I'm ready
+        </button>
+      </motion.div>
+    );
+  }
+
+  // "Help me think" — the guided reflection loop, one question at a time.
+  if (pauseStage === 'reflect') {
+    const { q, hint } = REFLECT_QUESTIONS[reflectIndex];
+    const isLast = reflectIndex === REFLECT_QUESTIONS.length - 1;
+    // Every question must be answered before moving on (client).
+    const answered = reflectAnswers[reflectIndex].trim().length > 0;
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        className="flex flex-col gap-3 py-2">
+        <div className="flex items-center">
+          <button
+            onClick={() => setPauseStage(needsPause ? 'pause' : 'done')}
+            className="text-xs text-blue-400 hover:text-blue-600 font-semibold transition-colors"
+          >
+            ← Back
+          </button>
+          <span className="text-[11px] text-blue-300 ml-auto">
+            {reflectIndex + 1} of {REFLECT_QUESTIONS.length}
+          </span>
+        </div>
+
+        <div className="reflection-box flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <MascotAvatar />
+            <span className="pax-label text-blue-600 font-bold text-base tracking-tight">{q}</span>
+          </div>
+          <p className="text-sm text-gray-500 font-serif italic -mt-1">{hint}</p>
+          <textarea
+            value={reflectAnswers[reflectIndex]}
+            onChange={(e) => {
+              const next = [...reflectAnswers];
+              next[reflectIndex] = e.target.value;
+              setReflectAnswers(next);
+            }}
+            placeholder="Just for you — write whatever comes to mind…"
+            className="w-full p-3 border border-blue-200 rounded-lg text-sm font-serif text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none h-28"
+          />
+          <p className="text-[11px] text-gray-400 text-center">
+            {answered
+              ? 'Your words stay with you — Pax just holds the space.'
+              : 'Take a moment to answer before moving on.'}
+          </p>
+          <button
+            disabled={!answered || reflectLoading}
+            onClick={() =>
+              isLast ? finishReflection() : setReflectIndex((i) => i + 1)
+            }
+            className={`flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-bold transition-colors ${
+              answered && !reflectLoading
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-blue-600/40 text-white/70 cursor-not-allowed'
+            }`}
+          >
+            {isLast ? (reflectLoading ? 'Reading your words…' : 'Finish') : 'Next question →'}
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Pax's read — built from the reader's own six answers (never a draft).
+  if (pauseStage === 'reflectResult') {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+        className="flex flex-col items-center gap-5 py-6 text-center">
+        <img src={mascotImg} alt="Pax" className="w-24 h-24 object-contain" />
+        <span className="pax-label text-blue-600 font-bold text-sm tracking-tight">
+          🐾 From your own words
+        </span>
+        <p className="text-lg font-serif text-gray-800 max-w-md leading-relaxed whitespace-pre-wrap">
+          {reflectRead || "Your words are your own — carry them forward when you're ready."}
+        </p>
+        <div className="flex flex-col gap-2 w-full max-w-xs mt-1">
+          <button
+            onClick={() => setPauseStage('done')}
+            className="btn-paws btn-paws-primary py-3 text-sm font-bold"
+          >
+            See Pax's full read
+          </button>
+          <button
+            onClick={onNewAnalysis}
+            className="text-xs font-semibold text-blue-500 hover:text-blue-700 transition-colors"
+          >
+            Start a new message
+          </button>
+        </div>
+      </motion.div>
+    );
   }
 
   return (
