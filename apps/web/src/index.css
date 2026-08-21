@@ -439,23 +439,23 @@
   border: 1px solid var(--accent-border);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  padding: 6px;
-  border-radius: 16px;
+  padding: 8px;
+  border-radius: 20px;
 }
 .mode-tab {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
   width: 100%;
-  padding: 11px 8px;
-  border-radius: 11px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1;
+  padding: 18px 12px;
+  border-radius: 14px;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.15;
   transition: all 0.2s ease;
   color: #7c9cc4;
   background: transparent;

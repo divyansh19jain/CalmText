@@ -51,6 +51,13 @@ const MAX_SHOTS = 10;
 // client (too cluttered); flip to true to bring them back.
 const SHOW_FEATURE_CARDS = false;
 
+// Screenshot -> text (OCR) upload. Off on the web app per client; the reader,
+// crop step and preview strip stay in place. Turn it back on by setting
+// VITE_ENABLE_SCREENSHOT_UPLOAD="true" in .env and restarting the dev server
+// (Vite bakes env vars in at build time, so a rebuild is needed in prod).
+const SHOW_SCREENSHOT_UPLOAD =
+  import.meta.env.VITE_ENABLE_SCREENSHOT_UPLOAD === "true";
+
 const MODES = [
   { value: "input", label: "I Received This", Icon: LuMessageSquare },
   { value: "output", label: "Reply", Icon: LuReply },
@@ -1102,8 +1109,20 @@ const App = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col gap-5 w-full max-w-xl mx-auto"
                 >
-                  {/* Hero: mascot + tagline */}
+                  {/* Hero: tagline first, mascot underneath — the prompt to
+                      pause is the first thing on the page (client request). */}
                   <div className="flex flex-col items-center gap-3 pt-2">
+                    <div className="text-center">
+                      <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">
+                        Pause before you send that text.
+                      </h1>
+                      <p className="text-sm text-blue-400 font-medium mt-1">
+                        🐾 Think before you reply.
+                      </p>
+                      <p className="text-xs text-gray-500 font-medium mt-1.5">
+                        With Pax, your texting companion.
+                      </p>
+                    </div>
                     <div className="relative">
                       <div className="w-[300px] rounded-3xl overflow-hidden relative z-10">
                         <img
@@ -1112,14 +1131,6 @@ const App = () => {
                           className="w-full h-full object-contain"
                         />
                       </div>
-                    </div>
-                    <div className="text-center">
-                      <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">
-                        Hi, I am Pax.
-                      </h1>
-                      <p className="text-sm text-blue-400 font-medium mt-1">
-                        🐾 Think before you text.
-                      </p>
                     </div>
                   </div>
 
@@ -1135,12 +1146,12 @@ const App = () => {
                         }}
                         className={`mode-tab ${mode === value ? "mode-tab-active" : ""}`}
                       >
-                        <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                        <Icon className="w-5 h-5 flex-shrink-0" />
                         <span className="truncate">{label}</span>
-                        {pro && <LuLock className="w-3 h-3 flex-shrink-0 opacity-60" />}
+                        {pro && <LuLock className="w-4 h-4 flex-shrink-0 opacity-60" />}
                       </button>
                     ))}
-                    {mode === "input" && (
+                    {SHOW_SCREENSHOT_UPLOAD && mode === "input" && (
                       <label
                         className={`mode-tab ${ocrLoading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
                         style={{ gridColumn: "1 / -1" }}
@@ -1213,7 +1224,7 @@ const App = () => {
 
                   {/* Uploaded screenshots — numbered so the conversation
                       order is visible at a glance */}
-                  {mode === "input" && (shots.length > 0 || ocrError) && (
+                  {SHOW_SCREENSHOT_UPLOAD && mode === "input" && (shots.length > 0 || ocrError) && (
                     <div className="flex flex-col gap-2 -mt-2">
                       {shots.length > 0 && (
                         <>
@@ -1473,7 +1484,7 @@ const App = () => {
       {/* end app-layout */}
 
       {/* Screenshot crop step — drag to select just the messages, then read */}
-      {ocrPreviewUrl && (
+      {SHOW_SCREENSHOT_UPLOAD && ocrPreviewUrl && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.6)" }}

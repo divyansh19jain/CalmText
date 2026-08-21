@@ -99,6 +99,20 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId }) => {
     }
   };
 
+  // "Send as is" hands the message back to the user — copy it to the clipboard
+  // so they can paste straight into their messaging app (client request).
+  const sendAsIs = async () => {
+    try {
+      if (draft.trim()) await navigator.clipboard.writeText(draft);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard blocked (no permission / insecure origin) — the draft is
+      // still on screen to copy by hand, so don't block the flow.
+    }
+    setStage('sent');
+  };
+
   // Stuck-flow state
   const [goal, setGoal] = useState(null); // one of GOALS
   const [answers, setAnswers] = useState(['', '', '']);
@@ -303,9 +317,10 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId }) => {
             <DraftBox />
             <PauseOutput />
             <div className="grid grid-cols-3 gap-2">
-              <button onClick={() => setStage('sent')}
+              <button onClick={sendAsIs}
                 className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors">
-                <LuSend className="w-3.5 h-3.5" /> Send As Is
+                {copied ? <LuCheck className="w-3.5 h-3.5" /> : <LuCopy className="w-3.5 h-3.5" />}
+                {copied ? 'Copied' : 'Send As Is'}
               </button>
               <button onClick={() => setStage('revise')}
                 className="revise-btn flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 hover:bg-blue-100 transition-colors">
@@ -424,9 +439,10 @@ const OutgoingLoop = ({ token, onHistoryRefresh, conversationId }) => {
                 className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200 hover:bg-blue-100 transition-colors">
                 <LuPencil className="w-3.5 h-3.5" /> Edit my message
               </button>
-              <button onClick={() => setStage('sent')}
+              <button onClick={sendAsIs}
                 className="flex items-center justify-center gap-1.5 py-2.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors">
-                <LuSend className="w-3.5 h-3.5" /> Send as is
+                {copied ? <LuCheck className="w-3.5 h-3.5" /> : <LuCopy className="w-3.5 h-3.5" />}
+                {copied ? 'Copied' : 'Send as is'}
               </button>
             </div>
           </motion.div>
