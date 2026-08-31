@@ -554,6 +554,11 @@ button, a, [role="button"] { cursor: pointer; }
   flex-shrink: 0;
 }
 
+/* The word the whole product is about — the vivid brand blue from the
+   mockup, lightened in dark mode so it stays readable on navy */
+.hero-accent { color: #2563EB; }
+.dark .hero-accent { color: #60a5fa; }
+
 /* Dashed "Type or Upload the conversation" card */
 .upload-card {
   display: flex;

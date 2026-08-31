@@ -1119,7 +1119,7 @@ const App = () => {
                     </div>
                     <div className="text-center">
                       <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">
-                        Stop misunderstandings from becoming arguments.
+                        Stop <span className="hero-accent">misunderstandings</span> from becoming arguments.
                       </h1>
                       <p className="text-sm text-blue-400 font-medium mt-1">
                         🐾 Pause to understand before you send that text.
