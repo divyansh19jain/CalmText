@@ -16,7 +16,7 @@ import {
   LuLock,
   LuPawPrint,
   LuReply,
-  LuImage,
+  LuUpload,
 } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import ResultSection from "./components/ResultSection";
@@ -1112,15 +1112,20 @@ const App = () => {
                   {/* Hero: tagline first, mascot underneath — the prompt to
                       pause is the first thing on the page (client request). */}
                   <div className="flex flex-col items-center gap-3 pt-2">
+                    {/* Wordmark — the name reads as the instruction */}
+                    <div className="pause-wordmark">
+                      <span className="pause-wordmark-text">P-A-U-S-E</span>
+                      <LuPawPrint className="pause-wordmark-paw" />
+                    </div>
                     <div className="text-center">
                       <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">
-                        Pause before you send that text.
+                        Stop misunderstandings from becoming arguments.
                       </h1>
                       <p className="text-sm text-blue-400 font-medium mt-1">
-                        🐾 Think before you reply.
+                        🐾 Pause to understand before you send that text.
                       </p>
                       <p className="text-xs text-gray-500 font-medium mt-1.5">
-                        With Pax, your texting companion.
+                        With Pax, your friendly texting companion.
                       </p>
                     </div>
                     <div className="relative">
@@ -1151,30 +1156,39 @@ const App = () => {
                         {pro && <LuLock className="w-4 h-4 flex-shrink-0 opacity-60" />}
                       </button>
                     ))}
-                    {SHOW_SCREENSHOT_UPLOAD && mode === "input" && (
-                      <label
-                        className={`mode-tab ${ocrLoading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-                        style={{ gridColumn: "1 / -1" }}
-                      >
-                        <LuImage className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span className="truncate">
+                  </div>
+
+                  {/* Upload card — same handler as before, given the card
+                      treatment from the mockup so it reads as the main way in */}
+                  {SHOW_SCREENSHOT_UPLOAD && mode === "input" && (
+                    <label
+                      className={`upload-card ${ocrLoading ? "upload-card-disabled" : ""}`}
+                    >
+                      <span className="upload-card-icon">
+                        <LuUpload className="w-6 h-6" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="upload-card-title block">
                           {ocrLoading
                             ? ocrProgress && ocrProgress.total > 1
                               ? `Reading ${ocrProgress.done + 1} of ${ocrProgress.total}…`
                               : "Reading screenshot…"
-                            : "Upload Screenshot of Conversation"}
+                            : "Type or Upload the conversation."}
                         </span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleScreenshotSelect}
-                          disabled={ocrLoading}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                  </div>
+                        <span className="upload-card-sub block">
+                          Upload a screenshot of the conversation.
+                        </span>
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleScreenshotSelect}
+                        disabled={ocrLoading}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
 
                   {/* Inputs */}
                   {mode === "voice" ? (
@@ -1270,7 +1284,7 @@ const App = () => {
                         ? isAuthenticated && !voiceReady
                         : !activeText.trim()
                     }
-                    className="btn-paws btn-paws-primary py-4 text-base font-bold"
+                    className="btn-paws btn-paws-primary btn-paws-pill py-4 text-base font-bold"
                   >
                     {mode === "voice" ? (
                       <>
@@ -1385,7 +1399,7 @@ const App = () => {
 
                   {/* Footer tagline */}
                   <p className="text-center text-[11px] text-blue-300 pb-2">
-                    Pause · Reflect · Communicate with clarity
+                    Pause · Understand · Reply with clarity
                   </p>
                 </motion.div>
               )}

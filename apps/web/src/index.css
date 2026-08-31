@@ -524,3 +524,79 @@
 ::-webkit-scrollbar-thumb { background: rgba(37,99,235,0.15); border-radius: 9999px; }
 
 button, a, [role="button"] { cursor: pointer; }
+
+/* ─────────────────────────────────────────────
+   HOME HERO — P-A-U-S-E wordmark, mascot halo,
+   upload card and pill CTA (client mockup)
+───────────────────────────────────────────── */
+
+/* Big spaced wordmark that opens the page */
+.pause-wordmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  line-height: 1;
+}
+.pause-wordmark-text {
+  font-size: clamp(2.5rem, 12vw, 3.75rem);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #2563EB 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.pause-wordmark-paw {
+  width: clamp(1.75rem, 8vw, 2.5rem);
+  height: clamp(1.75rem, 8vw, 2.5rem);
+  color: #2563EB;
+  flex-shrink: 0;
+}
+
+/* Dashed "Type or Upload the conversation" card */
+.upload-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1.5px dashed var(--accent-border);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.upload-card:hover {
+  border-color: rgba(37,99,235,0.38);
+  background: var(--surface-strong);
+}
+.upload-card-disabled { opacity: 0.6; cursor: not-allowed; }
+.upload-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #2563EB 0%, #3b82f6 100%);
+  box-shadow: 0 4px 14px rgba(37,99,235,0.30);
+}
+.upload-card-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-strong);
+}
+.upload-card-sub {
+  margin-top: 4px;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+/* Fully rounded CTA to match the mockup */
+.btn-paws-pill { border-radius: 999px; }

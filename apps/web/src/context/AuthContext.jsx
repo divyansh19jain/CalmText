@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext(null);
 
@@ -31,6 +32,26 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
   };
+
+  // A stored token can be expired, or signed with a JWT secret the server no
+  // longer uses. The API answers 401, but every caller swallows that error, so
+  // without this the app sits in a fake logged-in state: it refires the same
+  // requests on every mount and PublicOnlyRoute keeps the user out of /login.
+  // Treat a 401 from the API as the end of the session.
+  useEffect(() => {
+    const id = axios.interceptors.response.use(
+      (res) => res,
+      (err) => {
+        const url = err?.config?.url || '';
+        // A wrong password on the auth routes is a normal failure, not a dead session.
+        if (err?.response?.status === 401 && !url.includes('/auth/')) {
+          logout();
+        }
+        return Promise.reject(err);
+      }
+    );
+    return () => axios.interceptors.response.eject(id);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated: !!token }}>
