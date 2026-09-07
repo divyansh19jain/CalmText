@@ -32,6 +32,8 @@ import { STRIPE_ENABLED } from "./config/features";
 import Tesseract from "tesseract.js";
 import mascotImg from "./assets/pax_mascot-update-01-copy.png";
 import mascotSingleImg from "./assets/single-logo.png";
+import calmtextLogo from "./assets/calm-text-cut.png";
+import calmtextLogoDark from "./assets/calm-text-cut-dark.png";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api/v1";
@@ -1109,33 +1111,34 @@ const App = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex flex-col gap-5 w-full max-w-xl mx-auto"
                 >
-                  {/* Hero: tagline first, mascot underneath — the prompt to
-                      pause is the first thing on the page (client request). */}
+                  {/* Hero: the logo leads so Pax and the name arrive together —
+                      the client wants it obvious that Pax is the dog. */}
                   <div className="flex flex-col items-center gap-3 pt-2">
-                    {/* Wordmark — the name reads as the instruction */}
-                    <div className="pause-wordmark">
-                      <span className="pause-wordmark-text">P-A-U-S-E</span>
-                      <LuPawPrint className="pause-wordmark-paw" />
-                    </div>
+                    {/* The logo artwork, with its white ground keyed out so
+                        it sits directly on the page in either theme. */}
+                    <img
+                      src={calmtextLogo}
+                      alt="CalmText — Pause. Understand. Choose kindness."
+                      className="ct-logo-img ct-logo-light"
+                    />
+                    <img
+                      src={calmtextLogoDark}
+                      alt=""
+                      aria-hidden="true"
+                      className="ct-logo-img ct-logo-dark"
+                    />
                     <div className="text-center">
                       <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">
-                        Stop <span className="hero-accent">misunderstandings</span> from becoming arguments.
+                        Stop misunderstandings <span className="hero-accent">by text.</span>
                       </h1>
-                      <p className="text-sm text-blue-400 font-medium mt-1">
-                        🐾 Pause to understand before you send that text.
+                      <p className="text-sm font-semibold text-gray-700 mt-1.5">
+                        Gain understanding. Stop arguments.
                       </p>
-                      <p className="text-xs text-gray-500 font-medium mt-1.5">
-                        With Pax, your friendly texting companion.
+                      <p className="text-sm text-gray-500 mt-2 leading-snug">
+                        Let <span className="font-semibold">Pax</span> help you{" "}
+                        <span className="hero-accent font-semibold">keep it cool</span>
+                        <br className="hidden sm:block" /> when messages come in hot.
                       </p>
-                    </div>
-                    <div className="relative">
-                      <div className="w-[300px] rounded-3xl overflow-hidden relative z-10">
-                        <img
-                          src={mascotImg}
-                          alt="Pax"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
                     </div>
                   </div>
 
@@ -1297,7 +1300,7 @@ const App = () => {
                         <LuPawPrint className="w-5 h-5" />
                         {mode === "cleartext"
                           ? "ClearText"
-                          : "Press for the Pax Pause Take"}
+                          : "Try Pax"}
                       </>
                     )}
                   </button>

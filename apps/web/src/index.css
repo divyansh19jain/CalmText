@@ -530,29 +530,19 @@ button, a, [role="button"] { cursor: pointer; }
    upload card and pill CTA (client mockup)
 ───────────────────────────────────────────── */
 
-/* Big spaced wordmark that opens the page */
-.pause-wordmark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  line-height: 1;
+/* CalmText logo artwork — background keyed out, so it sits on the page
+   itself rather than in a white box. */
+.ct-logo-img {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  height: auto;
 }
-.pause-wordmark-text {
-  font-size: clamp(2.5rem, 12vw, 3.75rem);
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  background: linear-gradient(135deg, #2563EB 0%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.pause-wordmark-paw {
-  width: clamp(1.75rem, 8vw, 2.5rem);
-  height: clamp(1.75rem, 8vw, 2.5rem);
-  color: #2563EB;
-  flex-shrink: 0;
-}
+/* The artwork's tagline is dark navy, so the dark theme gets a copy with
+   that line repainted light. One image cannot read on both grounds. */
+.ct-logo-dark { display: none; }
+.dark .ct-logo-light { display: none; }
+.dark .ct-logo-dark { display: block; }
 
 /* The word the whole product is about — the vivid brand blue from the
    mockup, lightened in dark mode so it stays readable on navy */
