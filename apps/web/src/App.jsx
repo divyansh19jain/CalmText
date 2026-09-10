@@ -17,6 +17,7 @@ import {
   LuPawPrint,
   LuReply,
   LuUpload,
+  LuHeartHandshake,
 } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import ResultSection from "./components/ResultSection";
@@ -27,6 +28,7 @@ import QuotaExhaustedModal from "./components/QuotaExhaustedModal";
 import UpgradeModal from "./components/UpgradeModal";
 import PaymentResultModal from "./components/PaymentResultModal";
 import ThemeToggle from "./components/ThemeToggle";
+import UnderstandMe from "./components/UnderstandMe";
 import { useAuth } from "./context/AuthContext";
 import { STRIPE_ENABLED } from "./config/features";
 import Tesseract from "tesseract.js";
@@ -63,6 +65,7 @@ const SHOW_SCREENSHOT_UPLOAD =
 const MODES = [
   { value: "input", label: "I Received This", Icon: LuMessageSquare },
   { value: "output", label: "Reply", Icon: LuReply },
+  { value: "understand", label: "Understand Me", Icon: LuHeartHandshake, wide: true },
   // Hidden for now per client — backend and components stay for a later release.
   // Own Voice is still reachable via Pax's hand-off after the reply loop.
   // { value: "cleartext", label: "ClearText", Icon: LuAlignLeft },
@@ -1129,15 +1132,16 @@ const App = () => {
                     />
                     <div className="text-center">
                       <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">
-                        Stop misunderstandings <span className="hero-accent">by text.</span>
+                        Think before you <span className="hero-accent">text.</span>
                       </h1>
                       <p className="text-sm font-semibold text-gray-700 mt-1.5">
-                        Gain understanding. Stop arguments.
+                        Understand the message. Understand your reaction.
+                        Choose your response.
                       </p>
                       <p className="text-sm text-gray-500 mt-2 leading-snug">
-                        Let <span className="font-semibold">Pax</span> help you{" "}
-                        <span className="hero-accent font-semibold">keep it cool</span>
-                        <br className="hidden sm:block" /> when messages come in hot.
+                        Pax helps you slow down, understand and regulate your
+                        reaction, then choose what to say &mdash; or whether to
+                        say anything at all.
                       </p>
                     </div>
                   </div>
@@ -1145,7 +1149,7 @@ const App = () => {
                   {/* Mode tabs, with the conversation upload on its own row
                       underneath — same block, centered, equal size */}
                   <div className="mode-switcher md:hidden">
-                    {MODES.map(({ value, label, Icon, pro }) => (
+                    {MODES.map(({ value, label, Icon, pro, wide }) => (
                       <button
                         key={value}
                         onClick={() => {
@@ -1153,6 +1157,7 @@ const App = () => {
                           reset();
                         }}
                         className={`mode-tab ${mode === value ? "mode-tab-active" : ""}`}
+                        style={wide ? { gridColumn: "1 / -1" } : undefined}
                       >
                         <Icon className="w-5 h-5 flex-shrink-0" />
                         <span className="truncate">{label}</span>
@@ -1194,7 +1199,9 @@ const App = () => {
                   )}
 
                   {/* Inputs */}
-                  {mode === "voice" ? (
+                  {mode === "understand" ? (
+                    <UnderstandMe token={token} />
+                  ) : mode === "voice" ? (
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-xs font-semibold text-gray-500 ml-1 flex items-center gap-1.5">
@@ -1280,6 +1287,7 @@ const App = () => {
                   )}
 
                   {/* Action button */}
+                  {mode !== "understand" && (
                   <button
                     onClick={handleAnalyze}
                     disabled={
@@ -1304,6 +1312,7 @@ const App = () => {
                       </>
                     )}
                   </button>
+                  )}
 
                   {/* Pro hint for Own Voice when signed out */}
                   {mode === "voice" && !isAuthenticated && (

@@ -47,11 +47,11 @@ const AuthLayout = ({ children }) => {
           </div>
 
           <h3 className="text-white text-3xl xl:text-4xl xxl:text-5xl font-extrabold leading-[1.1] tracking-tight">
-            Pause. Reflect.<br />
-            <span className="text-blue-200">Communicate</span> with clarity.
+            Think before<br />
+            you <span className="text-blue-200">text.</span>
           </h3>
           <p className="text-blue-100/90 text-sm xl:text-base mt-3 xl:mt-5 leading-relaxed max-w-sm">
-            Pax helps you understand what people really mean — and say what you really feel.
+            Understand the message. Understand your reaction. Choose your response.
           </p>
         </div>
 

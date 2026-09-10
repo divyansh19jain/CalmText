@@ -593,5 +593,44 @@ button, a, [role="button"] { cursor: pointer; }
   color: var(--text-muted);
 }
 
+/* "Understand Me" flow — the five steps and their closing choices */
+.um-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 2px 12px var(--surface-shadow);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.um-choice:hover {
+  background: var(--surface-strong);
+  border-color: rgba(37,99,235,0.30);
+}
+.um-choice:active { transform: scale(0.99); }
+
+.um-quiet {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: var(--accent-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.2s ease;
+}
+.um-quiet:hover { background: var(--accent-dim); }
+
 /* Fully rounded CTA to match the mockup */
 .btn-paws-pill { border-radius: 999px; }

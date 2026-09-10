@@ -69,7 +69,7 @@ const Auth = ({ onClose }) => {
   };
   const subtitles = {
     signin: 'Sign in to continue your conversations with Pax.',
-    signup: 'Join CalmText and stop misunderstandings before they escalate.',
+    signup: 'Join CalmText and think before you text.',
     forgot: "Enter your email and we'll send you a reset code.",
     verify: 'Check your inbox for the 6-digit code.',
   };
@@ -117,10 +117,10 @@ const Auth = ({ onClose }) => {
               <span className="text-white font-extrabold text-lg tracking-tight">CalmText</span>
             </div>
             <h3 className="text-white text-2xl font-extrabold leading-snug tracking-tight">
-              Stop misunderstandings<br />from becoming arguments.
+              Think before<br />you text.
             </h3>
             <p className="text-blue-100 text-sm mt-3 leading-relaxed">
-              Pax helps you understand what people really mean — and say what you really feel.
+              Understand the message. Understand your reaction. Choose your response.
             </p>
           </div>
 
