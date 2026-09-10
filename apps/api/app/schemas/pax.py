@@ -68,6 +68,16 @@ class PaxReflectResponse(BaseModel):
     reflection: str
     latency_ms: int
 
+class PaxUnderstandRequest(BaseModel):
+    text: str = Field(..., description="What the user says happened, in their own words")
+
+class PaxUnderstandResponse(BaseModel):
+    reflection: str = ""   # what Pax thinks they are experiencing
+    loop: str = ""         # what the back-and-forth is doing
+    express: str = ""      # what needs to be felt and said
+    send: str = ""         # what actually needs to reach the other person
+    latency_ms: int
+
 class PaxFeedbackRequest(BaseModel):
     text: str
     pax: str

@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import time
 import asyncio
-from app.schemas.pax import PaxAnalyzeRequest, PaxAnalyzeResponse, PaxFeedbackRequest, PaxFeedbackResponse, ClearTextRequest, ClearTextResponse, OwnVoiceRequest, OwnVoiceResponse, PaxCoachRequest, PaxCoachResponse, PaxReflectRequest, PaxReflectResponse
-from app.prompts.pax_variants import CLEARTEXT_V1_PROMPT, OWNVOICE_V1_PROMPT, PAX_COACH_V1_PROMPT, PAX_REFLECT_V1_PROMPT
+from app.schemas.pax import PaxAnalyzeRequest, PaxAnalyzeResponse, PaxFeedbackRequest, PaxFeedbackResponse, ClearTextRequest, ClearTextResponse, OwnVoiceRequest, OwnVoiceResponse, PaxCoachRequest, PaxCoachResponse, PaxReflectRequest, PaxReflectResponse, PaxUnderstandRequest, PaxUnderstandResponse
+from app.prompts.pax_variants import CLEARTEXT_V1_PROMPT, OWNVOICE_V1_PROMPT, PAX_COACH_V1_PROMPT, PAX_REFLECT_V1_PROMPT, PAX_UNDERSTAND_V1_PROMPT
 from app.services.pax_service import PaxService
 from app.services.feedback_service import FeedbackService
 from app.core.dependencies import get_llm_client, get_claude_client, get_optional_user, get_current_user, apply_user_model_tier
@@ -345,6 +345,60 @@ async def reflect_pax(
 
     latency_ms = int((time.time() - start) * 1000)
     return PaxReflectResponse(reflection=reflection.strip(), latency_ms=latency_ms)
+
+@router.post("/understand", response_model=PaxUnderstandResponse)
+async def understand_pax(
+    request: PaxUnderstandRequest,
+    llm_client: LLMClient = Depends(get_llm_client),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_optional_user),
+):
+    """"Understand me" flow: the user says what happened before writing anything.
+
+    Pax reflects what they are experiencing, names what the back-and-forth is
+    doing, and separates what needs expressing from what needs sending. It never
+    writes the reply — the user chooses what happens next.
+    """
+    _check_search_limit(current_user)
+    apply_user_model_tier(llm_client, current_user)
+    start = time.time()
+    try:
+        raw, _ = await llm_client.generate_completion(PAX_UNDERSTAND_V1_PROMPT, request.text)
+    except Exception as e:
+        error_str = str(e).lower()
+        if 'insufficient_quota' in error_str or '429' in error_str:
+            await _notify_admin_quota_exhausted(current_user)
+            raise HTTPException(status_code=429, detail="Something went wrong")
+        raise
+
+    # The prompt answers with four labelled lines. Collect each label's text up
+    # to the next label so a wrapped paragraph is not truncated.
+    sections = {"REFLECT": [], "LOOP": [], "EXPRESS": [], "SEND": []}
+    current = None
+    for line in (raw or "").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        label = stripped.split(":", 1)[0].strip().upper()
+        if label in sections:
+            current = label
+            sections[label].append(stripped.split(":", 1)[1].strip())
+        elif current:
+            sections[current].append(stripped)
+    joined = {k: " ".join(v).strip() for k, v in sections.items()}
+
+    # If the model ignored the format, keep the text rather than showing nothing.
+    if not any(joined.values()):
+        joined["REFLECT"] = (raw or "").strip()
+
+    await _increment_search_count(db, current_user)
+    return PaxUnderstandResponse(
+        reflection=joined["REFLECT"],
+        loop=joined["LOOP"],
+        express=joined["EXPRESS"],
+        send=joined["SEND"],
+        latency_ms=int((time.time() - start) * 1000),
+    )
 
 @router.post("/feedback", response_model=PaxFeedbackResponse)
 async def submit_feedback(request: PaxFeedbackRequest):
