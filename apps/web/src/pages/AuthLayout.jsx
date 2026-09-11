@@ -47,11 +47,11 @@ const AuthLayout = ({ children }) => {
           </div>
 
           <h3 className="text-white text-3xl xl:text-4xl xxl:text-5xl font-extrabold leading-[1.1] tracking-tight">
-            Think before<br />
-            you <span className="text-blue-200">text.</span>
+            Stop misunderstandings<br />
+            <span className="text-blue-200">by text.</span>
           </h3>
           <p className="text-blue-100/90 text-sm xl:text-base mt-3 xl:mt-5 leading-relaxed max-w-sm">
-            Understand the message. Understand your reaction. Choose your response.
+            Gain understanding. Stop arguments. Be a good human.
           </p>
         </div>
 

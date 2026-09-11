@@ -43,7 +43,7 @@ const SignupPage = () => {
       
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-extrabold text-blue-900 tracking-tight">Create your account</h2>
-        <p className="text-sm text-gray-400">Join CalmText and think before you text.</p>
+        <p className="text-sm text-gray-400">Join CalmText and stop misunderstandings by text.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">

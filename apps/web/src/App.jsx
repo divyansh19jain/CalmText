@@ -1132,16 +1132,21 @@ const App = () => {
                     />
                     <div className="text-center">
                       <h1 className="text-2xl font-extrabold text-gray-800 tracking-tight leading-tight">
-                        Think before you <span className="hero-accent">text.</span>
+                        Stop misunderstandings <span className="hero-accent">by text.</span>
                       </h1>
                       <p className="text-sm font-semibold text-gray-700 mt-1.5">
-                        Understand the message. Understand your reaction.
-                        Choose your response.
+                        Gain understanding. Stop arguments. Be a good human.
                       </p>
                       <p className="text-sm text-gray-500 mt-2 leading-snug">
-                        Pax helps you slow down, understand and regulate your
-                        reaction, then choose what to say &mdash; or whether to
-                        say anything at all.
+                        <span className="font-semibold text-gray-700">
+                          You text, not AI
+                        </span>
+                        , while Pax guides you to keep it{" "}
+                        <span className="hero-accent font-semibold">
+                          cool, calm, and collected
+                        </span>{" "}
+                        instead of letting lack of tone in texts cause emotions
+                        to spiral.
                       </p>
                     </div>
                   </div>
